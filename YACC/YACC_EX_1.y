@@ -17,7 +17,7 @@ start : stmt '\n'		{printf("VALID %d\n",$1); exit(1);}
       ;
     
 stmt: IF '(' bool ')' '{' stmt '}' ELSE '{' stmt '}' {$$=1+max($6,$10);}
-    | expr '=' expr ';' {$$=0; printf("here1\n");}
+    | LETTER '=' expr ';' {$$=0; printf("here1\n");}
     ;
     
 bool: expr relop expr 
@@ -124,7 +124,7 @@ yylex(){
         }
    
     	return LETTER;
-    }else if(c==' '){
+    }else if(c==' ' || c=='\t'){
         return yylex();
     }else if(c=='='){
       
