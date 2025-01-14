@@ -1,0 +1,8 @@
+yacc -d exptree.y
+lex exptree.l
+gcc y.tab.c lex.yy.c
+./a.out test_EX_3_rpt.txt
+
+lex label_lex.l
+gcc lex.yy.c
+./a.out
