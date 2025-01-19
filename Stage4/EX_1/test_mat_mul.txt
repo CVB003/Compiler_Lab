@@ -1,0 +1,37 @@
+decl
+	int arr1[5][5],arr2[5][5],i,j,k,sum;
+enddecl
+begin
+	i=0;
+	while(i<5)do
+		j=0;
+		while(j<5)do
+			read(arr1[i][j]);
+			read(arr2[i][j]);
+			j=j+1;
+		endwhile;
+		i=i+1;
+	endwhile;
+	
+	i=0;
+	while(i<5)do
+		j=0;
+		while(j<5)do
+			k=0;
+			sum=0;
+			while(k<5)do
+				sum=sum+arr1[i][k]*arr2[k][j];
+				k=k+1;
+			endwhile;
+			write("Position");
+			write(i);
+			write(j);
+			write("Value");
+			write(sum);
+			j=j+1;
+		endwhile;
+		i=i+1;
+	endwhile;
+end;
+	
+	
