@@ -1,0 +1,10 @@
+decl
+	int result,ere,factorial(int result);
+enddecl
+int main(){
+decl
+enddecl
+begin
+write(result);
+end
+}
