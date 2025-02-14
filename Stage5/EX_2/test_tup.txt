@@ -1,0 +1,37 @@
+decl
+	tuple faculty(int a,int b,int c,int d,int e) y,m;
+	int f();
+enddecl
+int f(){
+decl
+tuple faculty(int a,int b,int c,int d,int e) x,k;
+enddecl
+begin
+x.a=2;
+x.b=4;
+x.c=6;
+x.d=8;
+k=x;
+
+breakpoint;
+
+write(x.a);
+write(x.b);
+write(x.c);
+write(k.c);
+write(k.d);
+write(k.a);
+write(k.b);
+
+return 0;
+end
+}
+int main(){
+decl
+int a;
+enddecl
+begin
+a=f();
+return 1;
+end
+}

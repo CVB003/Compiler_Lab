@@ -1,0 +1,21 @@
+decl
+int fun(int x);
+enddecl
+int fun(int x){
+decl
+enddecl
+begin
+return x+1;
+end
+}
+int main(){
+decl
+int b,c;
+enddecl
+begin
+read(b);
+c=fun(fun(b));
+write(c);
+return 0;
+end
+}

@@ -1,0 +1,31 @@
+decl
+	int a,b,*swap(int *x,int *y);
+enddecl
+int* swap(int *x,int *y){
+decl
+int temp;
+enddecl
+begin
+temp=*x;
+*x=*y;
+*y=temp;
+return x;
+end
+}
+
+int main(){
+decl
+int *t,*p;
+enddecl
+begin
+	read(a);
+	read(b);
+	t=swap(&a,&b);
+	p=t;
+	write(a);
+	write(b);
+	write(*p);
+	return 1;
+end
+
+}
