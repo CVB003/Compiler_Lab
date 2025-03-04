@@ -63,37 +63,39 @@ extern int yydebug;
     INT = 264,                     /* INT  */
     STR = 265,                     /* STR  */
     STRING = 266,                  /* STRING  */
-    BRKP = 267,                    /* BRKP  */
-    PLUS = 268,                    /* PLUS  */
-    MINUS = 269,                   /* MINUS  */
-    MUL = 270,                     /* MUL  */
-    DIV = 271,                     /* DIV  */
-    END = 272,                     /* END  */
-    BEGN = 273,                    /* BEGN  */
-    LT = 274,                      /* LT  */
-    GT = 275,                      /* GT  */
-    LE = 276,                      /* LE  */
-    GE = 277,                      /* GE  */
-    NE = 278,                      /* NE  */
-    EQ = 279,                      /* EQ  */
-    IF = 280,                      /* IF  */
-    THEN = 281,                    /* THEN  */
-    ELSE = 282,                    /* ELSE  */
-    ENDIF = 283,                   /* ENDIF  */
-    WHILE = 284,                   /* WHILE  */
-    DO = 285,                      /* DO  */
-    ENDWHILE = 286,                /* ENDWHILE  */
-    DECL = 287,                    /* DECL  */
-    ENDDECL = 288,                 /* ENDDECL  */
-    REPEAT = 289,                  /* REPEAT  */
-    UNTIL = 290,                   /* UNTIL  */
-    MAIN = 291,                    /* MAIN  */
-    RETURN = 292,                  /* RETURN  */
-    AND = 293,                     /* AND  */
-    DOT = 294,                     /* DOT  */
-    TUPLE = 295,                   /* TUPLE  */
-    MOD = 296,                     /* MOD  */
-    ADDR = 297                     /* ADDR  */
+    PLUS = 267,                    /* PLUS  */
+    MINUS = 268,                   /* MINUS  */
+    MUL = 269,                     /* MUL  */
+    DIV = 270,                     /* DIV  */
+    END = 271,                     /* END  */
+    BEGN = 272,                    /* BEGN  */
+    LT = 273,                      /* LT  */
+    GT = 274,                      /* GT  */
+    LE = 275,                      /* LE  */
+    GE = 276,                      /* GE  */
+    NE = 277,                      /* NE  */
+    EQ = 278,                      /* EQ  */
+    IF = 279,                      /* IF  */
+    THEN = 280,                    /* THEN  */
+    ELSE = 281,                    /* ELSE  */
+    ENDIF = 282,                   /* ENDIF  */
+    WHILE = 283,                   /* WHILE  */
+    DO = 284,                      /* DO  */
+    ENDWHILE = 285,                /* ENDWHILE  */
+    DECL = 286,                    /* DECL  */
+    ENDDECL = 287,                 /* ENDDECL  */
+    REPEAT = 288,                  /* REPEAT  */
+    UNTIL = 289,                   /* UNTIL  */
+    MAIN = 290,                    /* MAIN  */
+    RETURN = 291,                  /* RETURN  */
+    AND = 292,                     /* AND  */
+    TYPE = 293,                    /* TYPE  */
+    ENDTYPE = 294,                 /* ENDTYPE  */
+    ALLOC = 295,                   /* ALLOC  */
+    NULL_SPL = 296,                /* NULL_SPL  */
+    FREE = 297,                    /* FREE  */
+    INITIALIZE = 298,              /* INITIALIZE  */
+    MOD = 299                      /* MOD  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -111,37 +113,39 @@ extern int yydebug;
 #define INT 264
 #define STR 265
 #define STRING 266
-#define BRKP 267
-#define PLUS 268
-#define MINUS 269
-#define MUL 270
-#define DIV 271
-#define END 272
-#define BEGN 273
-#define LT 274
-#define GT 275
-#define LE 276
-#define GE 277
-#define NE 278
-#define EQ 279
-#define IF 280
-#define THEN 281
-#define ELSE 282
-#define ENDIF 283
-#define WHILE 284
-#define DO 285
-#define ENDWHILE 286
-#define DECL 287
-#define ENDDECL 288
-#define REPEAT 289
-#define UNTIL 290
-#define MAIN 291
-#define RETURN 292
-#define AND 293
-#define DOT 294
-#define TUPLE 295
-#define MOD 296
-#define ADDR 297
+#define PLUS 267
+#define MINUS 268
+#define MUL 269
+#define DIV 270
+#define END 271
+#define BEGN 272
+#define LT 273
+#define GT 274
+#define LE 275
+#define GE 276
+#define NE 277
+#define EQ 278
+#define IF 279
+#define THEN 280
+#define ELSE 281
+#define ENDIF 282
+#define WHILE 283
+#define DO 284
+#define ENDWHILE 285
+#define DECL 286
+#define ENDDECL 287
+#define REPEAT 288
+#define UNTIL 289
+#define MAIN 290
+#define RETURN 291
+#define AND 292
+#define TYPE 293
+#define ENDTYPE 294
+#define ALLOC 295
+#define NULL_SPL 296
+#define FREE 297
+#define INITIALIZE 298
+#define MOD 299
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -152,7 +156,7 @@ union YYSTYPE
 	struct tnode *no;
 	
 
-#line 156 "y.tab.h"
+#line 160 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

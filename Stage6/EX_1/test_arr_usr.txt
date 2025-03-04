@@ -1,0 +1,33 @@
+type
+student{
+	int roll;
+	int name;
+}
+endtype
+decl
+student class[10];
+enddecl
+
+int main(){
+decl
+student a,b,c;
+int x;
+enddecl
+begin
+x=initialize();
+a=alloc();
+b=alloc();
+c=alloc();
+a.roll=1;
+b.roll=2;
+c.roll=3;
+a.name=4;
+b.name=5;
+c.name=6;
+class[0]=a;
+class[1]=b;
+class[2]=c;
+write(class[0].roll);
+return 0;
+end
+}

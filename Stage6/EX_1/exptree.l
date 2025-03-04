@@ -6,6 +6,7 @@
 
 	int number;
 	char string_const[100]="";
+	char temp_str[100]="";
 	
 	
 	
@@ -14,12 +15,10 @@
 
 %%
 
-[0-9]+	{number = atoi(yytext); yylval.no = createTree(number,inttype, "", num,NULL,NULL); return NUM;}
+[0-9]+	{number = atoi(yytext); yylval.no = createTree(number,"INT","", num,NULL,NULL); return NUM;}
 "+"	{return PLUS;}
 "-"	{return MINUS;}
 "*"	{return MUL;}
-"&"	{return ADDR;}
-"."	{return DOT;}
 "/"	{return DIV;}
 "%"	{return MOD;}
 ">"	{return GT;}
@@ -30,7 +29,9 @@
 "=="	{return EQ;}
 [\[\]]  {return *yytext;}
 [ \t\n]	{}
-[()=;,{}]	{return *yytext;}
+[()=;,{}.]	{return *yytext;}
+"type"	{return TYPE;}
+"endtype" {return ENDTYPE;}
 "begin" {return BEGN;}
 "end"	{return END;}
 "read"	{printf("read \n");return READ;}
@@ -39,30 +40,35 @@
 "then"	{printf("then seen\n");return THEN;}
 "while"	{return WHILE;}
 "do"	{return DO;}
-"tuple" {return TUPLE;}
 "endif"	{printf("endif seen\n");return ENDIF;}
 "else"	{printf("else seen\n");return ELSE;}
 "endwhile" {printf("endwhil seen\n");return ENDWHILE;}
-"break"	{yylval.no=createTree(-1,notype,"",brek,NULL,NULL);return BREAK;}
-"continue"  {yylval.no=createTree(-1,notype,"",cont,NULL,NULL);return CONTINUE;}
+"break"	{yylval.no=createTree(-1,"void","",brek,NULL,NULL);return BREAK;}
+"continue"  {yylval.no=createTree(-1,"void","",cont,NULL,NULL);return CONTINUE;}
 "repeat" {return REPEAT;}
 "return" {printf("return seen\n");return RETURN;}
 "until" {return UNTIL;}
 "main" {printf("main reached\n");return MAIN;}
-"breakpoint" {yylval.no=createTree(-1,notype,"",brkp,NULL,NULL);return BRKP;}
 "decl"	{printf("decl detected\n");return DECL;}
+"alloc" {printf("alloc detected\n");return ALLOC;}
+"null" {return NULL_SPL;}
+"free" {return FREE;}
+"initialize" {return INITIALIZE;}
 "enddecl"	{printf("enddecl detected\n");return ENDDECL;}
-"int"	{printf("int detected\n");yylval.no=createTree(-1,inttype,"",intnd,NULL,NULL);return INT;}
-"str"   {yylval.no=createTree(-1,strtype,"",strnd,NULL,NULL);return STR;}
+"int"	{printf("int detected\n");yylval.no=createTree(-1,"INT","INT",intnd,NULL,NULL);return INT;}
+"str"   {yylval.no=createTree(-1,"STR","",strnd,NULL,NULL);return STR;}
 "AND"   {return AND;}
 [A-Za-z][A-Za-z0-9]*   {struct Gsymbol* t=lookup(yytext);
-			if(t==NULL){
-				yylval.no=createTree(-1,inttype,yytext,id,NULL,NULL);	
+			struct Typetable* ty=TLookup(yytext);
+			if(ty!=NULL){
+				yylval.no=createTree(-1,ty->name,yytext,id,NULL,NULL);
+			}else if(t==NULL){
+				yylval.no=createTree(-1,"INT",yytext,id,NULL,NULL);	
 			}else{
-				yylval.no=createTree(-1,t->type,yytext,id,NULL,NULL);	
+				yylval.no=createTree(-1,t->type->name,yytext,id,NULL,NULL);	
 			}
 			 return ID;}
-(\")([A-Za-z0-9 ]*)(\") {strncpy(string_const,yytext+1,yyleng-2); printf("here %s \n",string_const); yylval.no=createTree(-1,strtype,string_const,str_const,NULL,NULL);return STRING;}
+(\")([A-Za-z0-9 ]*)(\") {strncpy(string_const,temp_str,100);strncpy(string_const,yytext+1,yyleng-2); printf("here %s \n",string_const); yylval.no=createTree(-1,"STR",string_const,str_const,NULL,NULL);return STRING;}
 
 .	{yyerror("unknown character\n");exit(1);}
 

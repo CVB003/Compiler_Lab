@@ -1,0 +1,48 @@
+type
+List{
+    int data;
+    List next;
+}
+endtype
+decl
+List head;
+enddecl
+
+int main(){
+decl
+int length,x,k;
+List p,q;
+enddecl
+begin
+x=initialize();
+write("Sucess");
+head=null;
+read(length);
+q=head;
+while(length!=0)do
+read(x);
+write("read suc");
+p=alloc();
+
+p.data=x;
+
+p.next=null;
+
+if(head==null)then
+write("eq suc");
+head=p;
+q=p;
+else
+q.next=p;
+q=q.next;
+endif;
+length=length-1;
+endwhile;
+p=head;
+while(p!=null)do
+write(p.data);
+p=p.next;
+endwhile;
+return 1;
+end
+}
