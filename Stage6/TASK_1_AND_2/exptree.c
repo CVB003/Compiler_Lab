@@ -1221,6 +1221,7 @@ int code_gen(struct tnode* t){
                 	    	ff=ff->next;
                 	    }
                 	    fprintf(fp1,"ADD R%d,%d\n",i,field_pos);
+                	    
                 	    return i;
                 	    break;
                 case fieldlst: i=code_gen(t->left);
@@ -1233,7 +1234,9 @@ int code_gen(struct tnode* t){
                 	    	field_pos++;
                 	    	ff1=ff1->next;
                 	    }
+                	    fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
                 	    fprintf(fp1,"ADD R%d,%d\n",i,field_pos);
+                	    
                 	    return i;
                 	    break;
                 case fieldval: i=code_gen(t->left);
