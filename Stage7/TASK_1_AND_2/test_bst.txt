@@ -1,0 +1,165 @@
+type
+bst{
+int a;
+bst left;
+bst right;
+}
+endtype
+
+class 
+bstclass{
+decl
+	bst root;
+	int init();
+	bst getroot();
+	int setroot(bst n1);
+	bst getnode(int key);
+	bst insert(bst h, int key);
+	int inOrderfun(bst h);
+	int preOrderfun(bst h);
+	int postOrderfun(bst h);
+enddecl
+	int init(){
+		decl
+		enddecl
+		begin
+			write("hello in init");
+			self.root=null;
+			breakpoint;
+			return 1;
+		end
+	}
+	bst getroot(){
+		decl
+		enddecl
+		begin
+			return self.root;
+		end
+	}
+	int setroot(bst n1){
+		decl
+		enddecl
+		begin
+			self.root=n1;
+			return 1;
+		end
+	}
+	bst getnode(int key){
+		decl
+			bst temp;
+		enddecl
+		begin
+			write("in getnode");
+			temp=alloc();
+			temp.a=key;
+			temp.left=null;
+			temp.right=null;
+			return temp;
+		end
+	}
+	
+	bst insert(bst h, int key){
+		decl
+		enddecl
+		begin
+			write("inside insert");
+			if (h == null) then
+				write(key);
+				h = self.getnode(key);
+				write("in if2");
+			else 
+				write("in else");
+				if (key < h.a) then
+					h.left  = self.insert(h.left, key);
+				else 
+					if (key > h.a) then
+						 h.right = self.insert(h.right, key);
+					endif;
+				endif;
+			endif;   
+			return h;
+		end
+	}
+	int inOrderfun(bst h){
+		decl
+			int in;
+		enddecl
+		begin
+			if(h!= null) then
+				in=self.inOrderfun(h.left);
+				write(h.a);
+				in=self.inOrderfun(h.right);
+			endif;
+			return 1;
+		end
+	}
+
+	int preOrderfun(bst h){
+		decl
+			int in;
+		enddecl
+		begin
+			if(h!= null) then
+				write(h.a);
+				in=self.preOrderfun(h.left);
+				in=self.preOrderfun(h.right);
+			endif;
+			return 1;
+		end
+	}
+
+	int postOrderfun(bst h){
+		decl
+			int in;
+		enddecl
+		begin
+			
+			if(h!= null) then
+				in=self.postOrderfun(h.left);
+				in=self.postOrderfun(h.right);
+				write(h.a);
+			endif;
+			return 1;
+		end
+	
+	}
+	
+}
+endclass
+decl
+	bstclass obj;
+enddecl
+int main(){
+	decl
+		bst Root;
+		int x,in,val;
+	enddecl
+	begin
+		
+		write("hello");
+		
+		x=initialize();
+		write("hello2");
+		
+		obj = new(bstclass);
+		write("hello3");
+		x=obj.init();
+		write("hello4");
+		read(val);
+		Root = obj.getroot();
+		write("Hello");
+		while(val!=0) do
+		  write("inside while");
+		  Root = obj.insert(Root,val);
+		  write("insert done");
+		  
+		  read(val);
+		endwhile;
+		write("out while");
+		x = obj.setroot(Root);
+		in = obj.inOrderfun(obj.getroot());
+		in = obj.preOrderfun(obj.getroot());
+		in = obj.postOrderfun(obj.getroot());
+		return 0;
+	end
+	}

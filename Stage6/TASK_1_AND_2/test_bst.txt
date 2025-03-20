@@ -1,6 +1,10 @@
 type
+info{
+	int x;
+	int y;
+}
 bst{
-int a;
+info a;
 bst left;
 bst right;
 }
@@ -19,12 +23,13 @@ enddecl
 begin
 if(h==null)then
 h=alloc();
-h.a=key;
+h.a=alloc();
+h.a.x=key;
 h.left=null;
 h.right=null;
 else if(key<h.a)then
 h.left=insert(h.left,key);
-else if(key>h.a)then
+else if(key>h.a.x)then
 	h.right=insert(h.right, key);
 endif;
 endif;
@@ -39,7 +44,7 @@ enddecl
 begin
 if(h!=null)then
 in=inOrder(h.left);
-write(h.a);
+write(h.a.x);
 in=inOrder(h.right);
 endif;
 return 1;
@@ -51,7 +56,7 @@ decl
 enddecl
 begin
 if(h!=null) then
-write(h.a);
+write(h.a.x);
 in=preOrder(h.left);
 in=preOrder(h.right);
 endif;
@@ -66,7 +71,7 @@ begin
 if(h!=null)then
 in=postOrder(h.left);
 in=postOrder(h.right);
-write(h.a);
+write(h.a.x);
 endif;
 return 1;
 end

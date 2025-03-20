@@ -7,9 +7,14 @@ int curr_SP=4096;
 int curr_flabel=1;
 int curr_main=0;
 int curr_findex=0;
+int curr_classindex=0;
+int curr_fpos=0;
 struct Gsymbol* symbtable=NULL;
 struct Lsymbol* lsymbtable=NULL;
 struct Typetable* typetable=NULL; 
+struct Classtable* classtable=NULL;
+
+struct Classtable* curr_class=NULL;
 
 struct tnode* createTree(int val, char* type, char* c, int ntype, struct tnode *l, struct tnode *r)
 {
@@ -92,7 +97,7 @@ struct tnode* createTree(int val, char* type, char* c, int ntype, struct tnode *
        		   curr_ls=NULL;
        		   
        		   struct Paramstruct* p100=t->paramlist;
-       		   add_paramlst_Ltable(&(p100),&ls,&curr_ls);
+       		   int gg=add_paramlst_Ltable(&(p100),&ls,&curr_ls);
         	
         	   
         	  
@@ -104,11 +109,7 @@ struct tnode* createTree(int val, char* type, char* c, int ntype, struct tnode *
         	   
         	   add_lvars_Ltable(&p2,&ls,&curr_ls);
         	  		  
-        	   struct Lsymbol* gg=ls;
-        	   while(gg!=NULL){
-        	   	printf("%s\n",gg->name);
-        	   	gg=gg->next;
-        	   }
+        	  
         	   temp->Lentry=ls;
         	   lsymbtable=ls;
         	   
@@ -134,10 +135,353 @@ struct tnode* createTree(int val, char* type, char* c, int ntype, struct tnode *
         	     temp->Lentry=lt;
         	     lsymbtable=lt;
         	     break;
+        case cnamend: if(temp->right==NULL){
+        	      		CInstall(temp->left->varname,"");
+        	      		
+        	      }else{
+        	      	;
+        	      }
+        	      break;
+         case classdef:struct Classtable* class=CLookup(temp->left->left->varname);
          
+         	       //Code for inheritance to copy parents fields and methods needs to be added in Stage 8
+         	       
+         	       
+         	       
+         	       if(temp->right->left!=NULL){
+         	       
+         	       		struct Fieldlist* fields=(struct Fieldlist*)malloc(sizeof(struct Fieldlist));
+         	       		fields=NULL;
+         	       		convert_fldlst_class(temp->right->left,temp->left->left->varname,&fields);
+         	       		
+         	       		class->fieldcount=(class->fieldcount)+count_fields(fields);
+         	       		struct Fieldlist* curr_fields=class->memberfield;
+         	       		if(curr_fields==NULL){
+         	       			printf("curr_fields null here......................................................\n");
+         	       			
+         	       			class->memberfield=fields;
+         	       			
+         	       			
+         	       		}else{
+         	       			while(curr_fields->next!=NULL){
+         	       				curr_fields=curr_fields->next;
+         	       			}
+         	       			curr_fields->next=fields;
+         	       		}
+         	       		curr_fields=class->memberfield;
+         	       		struct Fieldlist* temp_fields=curr_fields->next;
+         	       		
+         	       		while(curr_fields!=NULL){
+         	       		
+         	       		temp_fields=curr_fields->next;
+         	       		if(temp_fields==NULL){
+         	       			printf("YES NULL\n");
+         	       		}
+         	       		printf("here???\n");
+         	       			while(temp_fields!=NULL){
+         	       				if(strcmp(curr_fields->name,temp_fields->name)==0){
+         	       					printf("Two fields of same name not allowed\n");
+         	       					exit(1);
+         	       				}
+         	       				temp_fields=temp_fields->next;
+         	       			}
+         	       			curr_fields=curr_fields->next;
+         	       		}
+         	       		
+         	       		
+         	       }
+         	       
+         	       if(temp->right->right->left!=NULL){
+         	       
+         	       		curr_fpos=class->methodcount;
+         	       		struct Paramstruct* func_names=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+         	       		func_names=NULL;
+         	       		convert_methods_params(temp->right->right->left,&func_names);
+         	       		
+         	       		add_funcdecl_class(temp->right->right->left,class);
+         	       		class->methodcount=curr_fpos;
+         	       }
+         	       
+         	       if(curr_findex>8 || class->methodcount>8){
+         	       		printf("More than 8 fields/methods are declared for a class\n");
+         	       		exit(1);
+         	       }
+         	       break;
+         	      
+         	       
+         	       
         	      
     }
     return temp;
+}
+
+
+
+void add_funcdefs_class(struct tnode* t){
+	if(t==NULL){
+		return;
+	}
+	if(t->nodetype==classdeflst){
+		add_funcdefs_class(t->left);
+		add_funcdefs_class(t->right);
+		return;
+	}
+	struct Classtable* class=CLookup(t->left->left->varname);
+	if(t->right->right->right!=NULL){
+		add_mdefs_class(t->right->right->right,class);
+	}
+	return;
+	
+}
+
+void add_mdefs_class(struct tnode* t,struct Classtable* class){
+	
+	if(t==NULL){
+		return;
+	}
+	if(t->nodetype==mdeflst){
+		add_mdefs_class(t->left,class);
+		add_mdefs_class(t->right,class);
+		return;
+	}
+	
+	if(MLookup(class,t->right->left->varname)==NULL){
+		printf("Func is not declared/inherited\n");
+		exit(1);
+	}
+	
+	if(TLookup(t->left->varname)==NULL){
+		printf("Type declared in mdef is not known type\n");
+		exit(1);
+	}
+	
+	struct Memberfunclist* memfunc=MLookup(class,t->right->left->varname);
+	
+	if(strcmp(memfunc->type->name,TLookup(t->left->varname)->name)!=0){
+       		printf("Type mismatch in funcn declaration and definition\n");
+       		exit(1);
+        }
+        
+        
+        if((t->right->right->left==NULL && memfunc->paramlist!=NULL) || (t->right->right->left!=NULL && memfunc->paramlist==NULL) ){
+       		printf("Arguments mismatch in declaration and definition\n");
+       		exit(1);
+        }
+        t->ctype=class;
+        struct Paramstruct* pt=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+        pt=NULL;
+       	struct Paramstruct* curr=(struct Paramstruct*)malloc(sizeof(struct Paramstruct)); 
+       	curr=NULL;
+       	convert_lst(&pt,&curr,t->right->right->left);
+       	name_eq_args(memfunc->paramlist,pt);
+	
+	struct Lsymbol* ls=(struct Lsymbol*)malloc(sizeof(struct Lsymbol)); 
+       	ls=NULL;
+       	struct Lsymbol* curr_ls=(struct Lsymbol*)malloc(sizeof(struct Lsymbol));
+       	curr_ls=NULL;
+       		   
+       	struct Paramstruct* p100=memfunc->paramlist;
+       	int curr_bind=add_paramlst_Ltable(&(p100),&ls,&curr_ls);
+       	struct Lsymbol* l1=(struct Lsymbol*)malloc(sizeof(struct Lsymbol));
+       	
+       	char mem_field[10]="mem_field";
+	l1->name=(char*)malloc(strlen(mem_field)*sizeof(char));
+	
+	strcpy(l1->name,mem_field);
+	l1->type=TLookup("INT");
+	l1->binding=curr_bind--;
+	l1->next=NULL;
+	if(ls==NULL){
+		ls=l1;
+		curr_ls=l1;
+	}else{
+		curr_ls->next=l1;
+		curr_ls=l1;
+	}
+       	struct Lsymbol* l2=(struct Lsymbol*)malloc(sizeof(struct Lsymbol));
+       	
+       	char met_field[10]="met_field";
+	l2->name=(char*)malloc(strlen(met_field)*sizeof(char));
+	
+	strcpy(l2->name,met_field);
+	l2->type=TLookup("INT");
+	l2->binding=curr_bind--;
+	l2->next=NULL;
+	curr_ls->next=l2;
+	curr_ls=l2;
+	
+	struct Paramstruct* p2=(struct Paramstruct*)malloc(sizeof(struct Paramstruct)); 
+        p2=NULL;
+        struct Paramstruct* curr_p=(struct Paramstruct*)malloc(sizeof(struct Paramstruct)); 
+        curr_p=NULL;
+        convert_ldecl(t->right->right->right->left,&p2,&curr_p);
+        	   
+        add_lvars_Ltable(&p2,&ls,&curr_ls);
+	
+	lsymbtable=ls;
+	
+	curr_class=class;
+	
+	check_decl(TLookup(t->left->varname),t->right->right->right->right);
+	printf("Entering mdefs %s %s\n",class->name,memfunc->name);
+	code_gen(t);
+	curr_class=NULL;
+	destroy_lsymbtable();
+}
+
+void convert_methods_params(struct tnode* t,struct Paramstruct** p){
+	if(t==NULL){
+		return;
+	}
+	if(t->nodetype==mdeclst){
+		convert_methods_params(t->left,p);
+		convert_methods_params(t->right,p);
+		return;
+	}
+	
+	struct Paramstruct* p1=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+	p1->name=(char*)malloc(sizeof(char)*strlen(t->right->left->varname));
+	strcpy(p1->name,t->right->left->varname);
+	
+	p1->type=TLookup(t->left->varname);
+	p1->next=NULL;
+	struct Paramstruct* temp=(*p);
+	
+	if(temp==NULL){
+		
+		(*p)=p1;
+	}else{
+		while(temp->next!=NULL){
+			if(strcmp(temp->name,p1->name)==0){
+				printf("Two method declarations with same name not allowed\n");
+				exit(1);
+			}
+			temp=temp->next;
+		}
+		temp->next=p1;
+	}
+	
+	return;
+}
+
+void add_funcdecl_class(struct tnode* t,struct Classtable* class){
+	if(t==NULL){
+		return;
+	}
+	if(t->nodetype==mdeclst){
+		add_funcdecl_class(t->left,class);
+		add_funcdecl_class(t->right,class);
+		return;
+	}
+	
+	
+	
+	if(MLookup(class,t->right->left->varname)!=NULL){
+		//To be added for inheritance.
+		;
+	}else{
+		struct Memberfunclist* mflst=class->vfunptr;
+		struct Memberfunclist* temp=(struct Memberfunclist*)malloc(sizeof(struct Memberfunclist));
+		temp->name=(char*)malloc(sizeof(char)*strlen(t->right->left->varname));
+		strcpy(temp->name,t->right->left->varname);
+		temp->type=TLookup(t->left->varname);
+		temp->funcposition=curr_fpos++;
+		temp->flabel=curr_flabel++;
+		temp->next=NULL;
+		
+		if(t->right->right!=NULL){
+			struct Paramstruct* pt=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+       			pt=NULL;
+       			struct Paramstruct* curr=(struct Paramstruct*)malloc(sizeof(struct Paramstruct)); 
+       			curr=NULL;
+       			convert_lst_class(&pt,&curr,t->right->right);
+       			temp->paramlist=pt;
+		}else{
+			temp->paramlist=NULL;
+		}
+		
+		
+		if(mflst!=NULL){
+			while(mflst->next!=NULL){
+				mflst=mflst->next;
+			}
+			mflst->next=temp;
+		}else{
+			class->vfunptr=temp;
+		}
+		
+		
+	}
+	return;
+}
+
+struct Memberfunclist* MLookup (struct Classtable* class,char* name){
+	struct Memberfunclist* mflst=class->vfunptr;
+	while(mflst!=NULL){
+		if(strcmp(name,mflst->name)==0){
+			return mflst;
+		}
+		mflst=mflst->next;
+	}
+	return NULL;
+
+}
+
+struct Fieldlist* Flookup(struct Classtable* class,char* name){
+	printf("Reaching Flookup\n");
+	struct Fieldlist* flst=class->memberfield;
+	printf("Reaching Flookup\n");
+	while(flst!=NULL){
+		printf("afsdfs\n");
+		if(strcmp(name,flst->name)==0){
+			return flst;
+		}
+		flst=flst->next;
+	}
+	return NULL;
+}
+
+struct Classtable* CInstall(char *name,char* parent){
+    struct Classtable* temp = (struct Classtable*)malloc(sizeof(struct Classtable));
+
+    if ( CLookup(name) != NULL ){
+    	printf("Class already exists: %s\n", name);
+    	exit(1);
+    }
+
+    temp->name = (char*)malloc(sizeof(char)*strlen(name));
+    strcpy(temp->name, name);
+    temp->memberfield = NULL;      
+    temp->vfunptr = NULL;
+    temp->parentptr = CLookup(parent);
+    temp->class_index = curr_classindex++;
+    temp->fieldcount = 0;                     
+    temp->methodcount = 0;                    
+    temp->next = NULL;
+    
+    //For virt table
+    curr_SP+=8;
+    if ( classtable == NULL ){
+    	classtable = temp;
+    }else{
+        struct Classtable* t = classtable;
+        while(t->next!=NULL){
+        	t=t->next;
+        }
+        t->next = temp;
+    }
+
+}
+
+struct Classtable* CLookup(char *name){
+	struct Classtable* temp=classtable;
+	while(temp!=NULL){
+		if(strcmp(name,temp->name)==0){
+			return temp;
+		}
+		temp=temp->next;
+	}
+	return NULL;
 }
 
 struct Typetable* TLookup(char* name){
@@ -224,6 +568,7 @@ void TypeTableCreate(){
 
 struct Fieldlist* FLookup(struct Typetable *type, char *name){
 	struct Fieldlist* f=type->fields;
+
 	while(f!=NULL){
 		if(strcmp(f->name,name)==0){
 			return f;
@@ -231,6 +576,73 @@ struct Fieldlist* FLookup(struct Typetable *type, char *name){
 		f=f->next;
 	}
 	return NULL;
+}
+
+struct Fieldlist* convert_fldlst_class(struct tnode* t,char* name,struct Fieldlist** f){
+	
+	struct Fieldlist* temp=CLookup(name)->memberfield;
+	printf("-------------------------------------------------------------------------------------------------\n");
+	if(temp==NULL){
+		curr_findex=0;
+	}else{
+		while(temp->next!=NULL){
+			temp=temp->next;
+		}
+		if(temp->type==NULL){
+			curr_findex=temp->fieldindex+2;
+		}else{
+			curr_findex=temp->fieldindex+1;
+		}
+	}
+	printf("Calling here\n");
+	convert_flds_class(f,t,name);
+	
+	return *f;
+
+}
+
+void convert_flds_class(struct Fieldlist** f,struct tnode* t,char* name){
+	if(t==NULL){
+		return;
+	}
+	if(t->nodetype==fielddecl){
+		struct Fieldlist* temp=(struct Fieldlist*)malloc(sizeof(struct Fieldlist));
+		temp->name=(char*)malloc(strlen(t->right->varname)*sizeof(char));
+		strcpy(temp->name,t->right->varname);
+		printf("FIeld name %s-------------------------------------------------------------------------\n",t->right->varname);
+		if(TLookup(t->left->varname)!=NULL){
+			temp->type=TLookup(t->left->varname);
+		}else{
+			if(CLookup(t->left->varname)==NULL){
+				printf("Member field in class is of prev undeclared type\n");
+				exit(1);
+			}
+			temp->ctype=CLookup(t->left->varname);
+		}
+		temp->fieldindex=curr_findex;
+		if(temp->type==NULL){
+			
+			curr_findex+=2;
+		}else{
+			curr_findex++;
+		}
+		
+		temp->next=NULL;
+		
+		struct Fieldlist* c=(*f);
+		if((*f)==NULL){
+			*f=temp;
+		}else{
+			while(c->next!=NULL){
+				c=c->next;
+			}
+			c->next=temp;
+		}
+		return;
+	}
+	convert_flds_class(f,t->left,name);
+	convert_flds_class(f,t->right,name);
+	return;
 }
 
 struct Fieldlist* convert_fldlst(struct tnode* t,char* name){
@@ -394,7 +806,7 @@ void assg_type_idlst(struct tnode* t,struct Paramstruct** p2,struct Paramstruct*
 	
 }
 
-void add_paramlst_Ltable(struct Paramstruct** p,struct Lsymbol** ls,struct Lsymbol** curr_ls){
+int add_paramlst_Ltable(struct Paramstruct** p,struct Lsymbol** ls,struct Lsymbol** curr_ls){
 	int curr_bind=-3;
 	while(*p!=NULL){
 		struct Lsymbol* l=(struct Lsymbol*)malloc(sizeof(struct Lsymbol));
@@ -413,7 +825,7 @@ void add_paramlst_Ltable(struct Paramstruct** p,struct Lsymbol** ls,struct Lsymb
 		}
 		*p=(*p)->next;
 	}
-	return;
+	return curr_bind;
 }
 
 void convert_lst(struct Paramstruct** pt,struct Paramstruct** curr,struct tnode* t){
@@ -439,6 +851,40 @@ void convert_lst(struct Paramstruct** pt,struct Paramstruct** curr,struct tnode*
 	}
 	return;
 }
+
+void convert_lst_class(struct Paramstruct** pt,struct Paramstruct** curr,struct tnode* t){
+	if(t==NULL){
+		return;
+	}
+	if(t->nodetype==paramlst){
+		convert_lst(pt,curr,t->left);
+		convert_lst(pt,curr,t->right);
+		return;
+	}
+	struct Paramstruct* prm=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+	prm->name=(char*)malloc(strlen(t->right->varname)*sizeof(char));
+	strcpy(prm->name,t->right->varname);
+	//If needed change this if params can be smthg else other than int /str
+	prm->type=TLookup(t->left->varname);
+	prm->next=NULL;
+	if(*pt==NULL){
+		*pt=prm;
+		*curr=prm;
+	}else{
+		struct Paramstruct* tt=*pt;
+		while(tt!=NULL){
+			if(strcmp(tt->name,prm->name)==0){
+				printf("Two params with same name declared in methods\n");
+				exit(1);
+			}
+			tt=tt->next;
+		}
+		(*curr)->next=prm;
+		*curr=prm;
+	}
+	return;
+}
+
 
 void name_eq_args(struct Paramstruct* p1,struct Paramstruct* p2){
 	if(p1==NULL && p2==NULL){
@@ -472,35 +918,73 @@ void checktype(struct tnode* l,struct Typetable* ltype,struct tnode* r,struct Ty
     	return;
 }
 
-void assign_type(struct tnode* t,struct Typetable* type){
+void assign_type(struct tnode* t,char* name){
 	if(t==NULL){
 		return;
 	}
-	
-	if(t->nodetype==id){
-		t->type=type;
-		install(t->varname,type,1);
-		t->Gentry=lookup(t->varname);
-		return;
-	}else if(t->nodetype==arrdecl){
-		t->left->type=type;
-		install(t->left->varname,type,t->right->val);
-		t->left->Gentry=lookup(t->left->varname);
-		return;
-		
-	}else if(t->nodetype==funcdecl){
-		t->left->type=type;
-		
-		
-		install(t->left->varname,type,0);
-		t->left->Gentry=lookup(t->left->varname);
-		
-		insert_paramlst(lookup(t->left->varname),t->right);
-		return;
-		
+	struct Typetable* type;
+	if(TLookup(name)!=NULL){
+		type=TLookup(name);
+		if(t->nodetype==id){
+			t->type=type;
+			install(t->varname,type,1);
+			t->Gentry=lookup(t->varname);
+			return;
+		}else if(t->nodetype==arrdecl){
+			t->left->type=type;
+			install(t->left->varname,type,t->right->val);
+			t->left->Gentry=lookup(t->left->varname);
+			return;
+			
+		}else if(t->nodetype==funcdecl){
+			t->left->type=type;
+			
+			
+			install(t->left->varname,type,0);
+			t->left->Gentry=lookup(t->left->varname);
+			
+			insert_paramlst(lookup(t->left->varname),t->right);
+			return;
+			
+		}
 	}
-	assign_type(t->left,type);
-	assign_type(t->right,type);
+	if(CLookup(name)!=NULL){
+		struct Classtable* class=CLookup(name);
+		if(t->nodetype==id){
+			t->ctype=class;
+			struct Gsymbol* te=lookup(name);
+	
+	
+			if(te!=NULL){
+				printf("Variable with name: %s is redeclared\n",name);
+				exit(1);
+			}
+			te=symbtable;
+			while(te!=NULL && te->next!=NULL){
+				te=te->next;
+			}
+			struct Gsymbol* s=(struct Gsymbol*)malloc(sizeof(struct Gsymbol));
+			s->cptr=class;
+			s->size=2;
+			s->name=(char*)malloc(strlen(t->varname)*sizeof(char));
+			strcpy(s->name,t->varname);
+			s->binding=curr_SP;
+			s->paramlist=NULL;
+			curr_SP+=2;
+			s->next=NULL;
+			
+			if(te==NULL){
+				symbtable=s;
+			}else{
+				te->next=s;
+			}
+			t->Gentry=lookup(t->varname);
+			return;
+		}
+	}
+	
+	assign_type(t->left,name);
+	assign_type(t->right,name);
 	return;
 
 }
@@ -546,7 +1030,9 @@ void check_decl(struct Typetable* type,struct tnode* t){
 		return;
 	}
 	int done=0;
-	
+	 
+	struct Paramstruct* par1;
+	struct Paramstruct* par2;
 	switch((t->nodetype)){
 		case rd: 
 			if(t->left->nodetype==id && LLookup(t->left->varname)==NULL && lookup(t->left->varname)==NULL){
@@ -580,12 +1066,9 @@ void check_decl(struct Typetable* type,struct tnode* t){
 			done=1;
 			break;
 		case asg: printf("hereeeee asg\n");
-			  printf("%s\n",t->left->varname);
-			  printf("%s\n",t->right->varname); 
+			  printf("hereeeee asdfsd\n");
 			check_decl(type,t->left);
-			if(strcmp(t->left->varname,"q")==0){
-				printf("Atleast here\n");
-			}
+			
 			check_decl(type,t->right);
 			
 			if(t->left->nodetype==id && LLookup(t->left->varname)==NULL && lookup(t->left->varname)==NULL){
@@ -593,10 +1076,66 @@ void check_decl(struct Typetable* type,struct tnode* t){
 			 	exit(1);
 			}
 			
+			if(t->right->nodetype==newnd){
+				
+				if(t->left->ctype==NULL || t->right->ctype==NULL){
+					printf("Incorrect var types in new asg\n");
+					exit(1);
+				}
+				if(strcmp(t->left->ctype->name,t->right->ctype->name)!=0){
+					struct Classtable* rhs_class=t->right->ctype->parentptr;
+					while(rhs_class!=NULL){
+						if(strcmp(t->left->ctype->name,rhs_class->name)==0){
+							break;
+						}
+						rhs_class=rhs_class->parentptr;
+					}
+					if(rhs_class==NULL){
+						printf("RHS in new asg is not in LHS inheritance hierarchy\n");
+						exit(1);
+					}
+				}
+				done=1;
+				break;
+			}
+			
+			if(t->left->nodetype==id && t->left->ctype!=NULL){
+				if(t->right->nodetype!=id){
+					printf("Incorrect assignment to a class var\n");
+					exit(1);
+				}
+				if(t->right->ctype==NULL){
+					printf("RHS in asg is not a class var\n");
+					exit(1);
+				}
+				struct Classtable* te=t->right->ctype;
+				while(te!=NULL){
+					if(strcmp(t->left->ctype->name,te->name)==0){
+						break;
+					}
+					te=te->parentptr;
+				}
+				if(te==NULL){
+					printf("RHS is a class var but not in LHS inh heirarchy\n");
+					exit(1);
+				}
+				done=1;
+				break;
+			}
+			
 			if(t->right->nodetype==allocnd){
 				
-				
-				if(LLookup(t->left->varname)!=NULL){
+				if(t->left->nodetype==self_field){
+					struct Typetable* tr=Flookup(t->left->left->ctype,t->left->right->varname)->type;
+					if(tr==NULL){
+						printf("Incorrect use of alloc\n");
+						exit(1);
+					}
+					if(strcmp(tr->name,"INT")==0 || strcmp(tr->name,"STR")==0 || strcmp(tr->name,"void")==0 || strcmp(tr->name,"bool")==0){
+					printf("Incorrect member field type to use alloc with\n");
+					exit(1);
+					}
+				}else if(LLookup(t->left->varname)!=NULL){
 					if(strcmp(LLookup(t->left->varname)->type->name,"INT")==0 || strcmp(LLookup(t->left->varname)->type->name,"STR")==0 || strcmp(LLookup(t->left->varname)->type->name,"bool")==0 || strcmp(LLookup(t->left->varname)->type->name,"void")==0 || strcmp(LLookup(t->left->varname)->type->name,"NULL")==0){
 						printf("Alloc used for non-user defined type var\n");
 						exit(1);
@@ -614,11 +1153,28 @@ void check_decl(struct Typetable* type,struct tnode* t){
 			
 			if(t->right->nodetype==nullnd){
 				
-				
-				if(strcmp(t->left->type->name,"INT")==0 || strcmp(t->left->type->name,"STR")==0 || strcmp(t->left->type->name,"bool")==0 || strcmp(t->left->type->name,"void")==0){
+				printf("Prob here\n");
+				if(t->left->nodetype==self_field){
+					struct Typetable* tr=Flookup(t->left->left->ctype,t->left->right->varname)->type;
+					if(tr==NULL){
+						printf("Incorrect use of null\n");
+						exit(1);
+					}
+					if(strcmp(tr->name,"INT")==0 || strcmp(tr->name,"STR")==0 || strcmp(tr->name,"void")==0 || strcmp(tr->name,"bool")==0){
+					printf("Incorrect member field type to use null with\n");
+					exit(1);
+					}
+				}else if(LLookup(t->left->varname)!=NULL){
+					if(strcmp(LLookup(t->left->varname)->type->name,"INT")==0 || strcmp(LLookup(t->left->varname)->type->name,"STR")==0 || strcmp(LLookup(t->left->varname)->type->name,"bool")==0 || strcmp(LLookup(t->left->varname)->type->name,"void")==0){
 						printf("NULL used for non-user defined type var\n");
 						exit(1);
 					}
+				}else if(lookup(t->left->varname)!=NULL){
+					if(strcmp(lookup(t->left->varname)->type->name,"INT")==0 || strcmp(lookup(t->left->varname)->type->name,"STR")==0 || strcmp(lookup(t->left->varname)->type->name,"bool")==0 || strcmp(lookup(t->left->varname)->type->name,"void")==0){
+						printf("NULL used for non-user defined type var\n");
+						exit(1);
+					}
+				}
 				printf("NULL CHECK DONE\n");
 				done=1;
 				break;
@@ -640,8 +1196,34 @@ void check_decl(struct Typetable* type,struct tnode* t){
 				printf("Arr %s is undeclared\n",t->left->left->varname);
 			 	exit(1);
 			}
+			if(t->left->nodetype==self_field){
+				if(t->left->type==NULL){
+					if(t->right->nodetype!=self_field){
+						printf("Incorrect asg for member in method\n");
+						exit(1);
+					}
+					if(t->left->ctype==NULL || t->right->ctype==NULL){
+						printf("Incorrect assignment for self\n");
+						exit(1);
+					}
+					
+					if(strcmp(t->left->ctype->name,t->right->ctype->name)!=0){
+						printf("Incorrect type of member fields in LHS and RHS\n");
+						exit(1);
+					}
+				}else{
+					if(strcmp(t->left->type->name,t->right->type->name)!=0){
+						printf("Type mismatch\n");
+						exit(1);
+					}
+				}
+			}
+			
 			if(t->left->nodetype==fieldlst || t->left->nodetype==field || t->right->nodetype==fieldlst || t->right->nodetype==field){
 				printf("enterrrring\n");
+				
+				
+				
 				if(strcmp(t->left->type->name,t->right->type->name)!=0){
 					printf("Type mismatch\n");
 					exit(1);
@@ -658,7 +1240,8 @@ void check_decl(struct Typetable* type,struct tnode* t){
 			   }
 			   done=1;
 			   break;
-		case id:printf("hereeeee id\n"); if(lookup(t->varname)==NULL && lsymbtable==NULL && LLookup(t->varname)==NULL){
+		case id:printf("hereeeee id\n"); 
+			if(lookup(t->varname)==NULL && lsymbtable==NULL && LLookup(t->varname)==NULL){
 	 				printf("Variable %s is undeclared\n",t->varname);
 	 				exit(1);
 	 			 }
@@ -668,6 +1251,9 @@ void check_decl(struct Typetable* type,struct tnode* t){
 	 			 }else{
 	 			 	t->Gentry=lookup(t->varname);
 	 			 	t->type=lookup(t->varname)->type;
+	 			 	if(t->type==NULL){
+	 			 		t->ctype=lookup(t->varname)->cptr;
+	 			 	}
 	 			 }
 	 			 printf("exit hereeeee id\n");
 	 			 done=1;
@@ -797,13 +1383,33 @@ void check_decl(struct Typetable* type,struct tnode* t){
 	 		 }
 	 		 done=1;  
 	 		 break;
-	 	case fieldlst:check_decl(type,t->left);
-	 		      struct Fieldlist* f1=FLookup(t->left->type,t->right->varname);
-	 		      if(f1==NULL){
-	 		      	printf("Member field %s is not defined\n",t->right->varname);
-	 		      	exit(1);
+	 	case self_field:
+	 			if(Flookup(curr_class,t->right->varname)==NULL){
+	 				printf("self_field till here\n"); 
+        			 		printf("Member field: %s , does not exist for class: %s\n",t->right->varname,curr_class->name);
+        			 		exit(1);
+        			 	}
+        			 	
+        			 t->type=Flookup(curr_class,t->right->varname)->type;
+        			 
+        			 t->left->ctype=curr_class;
+        			 t->ctype=Flookup(curr_class,t->right->varname)->ctype;
+	 			 done=1;
+	 			break;
+	 	case fieldlst:
+	 		      
+	 		      check_decl(type,t->left);
+	 		      if(t->left->type!=NULL){
+	 		      		struct Fieldlist* f1=FLookup(t->left->type,t->right->varname);
+		 		      if(f1==NULL){
+		 		      	printf("Member field %s is not defined\n",t->right->varname);
+		 		      	exit(1);
+		 		      }
+		 		      t->type=f1->type;
+	 		      }else{
+	 		      		printf("Incorrect usage of self\n");
 	 		      }
-	 		      t->type=f1->type;
+	 		      
 	 		      done=1;
 	 		      break;
 	 	
@@ -819,6 +1425,7 @@ void check_decl(struct Typetable* type,struct tnode* t){
 	 	case fieldval: check_decl(type,t->left);
 	 		      
 	 		      t->type=t->left->type;
+	 		      
 	 		      done=1;
 	 		      break;
 	 	case freend: check_decl(type,t->left);
@@ -833,10 +1440,11 @@ void check_decl(struct Typetable* type,struct tnode* t){
 	 		     while(tt!=NULL){
 	 		     	printf("%s %s\n",tt->name,tt->type->name);
 	 		     	tt=tt->next;
-	 		     }struct Paramstruct* par1=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
-        	     struct Paramstruct* par2=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
-        	     par1=NULL;
-        	     par2=NULL;
+	 		     }
+	 		     par1=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+        	     	par2=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+        	     	par1=NULL;
+        	     	par2=NULL;
         	     
         	     
         	     convert_arglst(t->right,&par1,&par2,type);
@@ -863,6 +1471,98 @@ void check_decl(struct Typetable* type,struct tnode* t){
         	     }
         	     done=1;
         	     break;
+        	case newnd:printf("Entering newnd check\n");
+        		   if(CLookup(t->left->varname)==NULL){
+        		   	printf("Argument of new is not of class type\n");
+        		   	exit(1);
+		           }
+        		   t->left->ctype=CLookup(t->left->varname);
+        		   t->ctype=t->left->ctype;
+        		   done=1;
+        	
+        		   break;
+        	
+        	case delnd:check_decl(type,t->left);
+        		   if(t->left->ctype==NULL){
+        		   	printf("Argument of new is not of class type\n");
+        		   	exit(1);
+        		   }
+        		   t->ctype=t->left->ctype;
+        		   done=1;
+        	
+        		   break;
+        		   
+        	case metcall: struct Memberfunclist* mflst=NULL; 
+        			if(t->left->nodetype==self_field){
+        			 	if(MLookup(curr_class,t->left->right->varname)==NULL){
+        			 		printf("Method: %s , does not exist for class: %s\n",t->left->right->varname,curr_class->name);
+        			 		exit(1);
+        			 	}
+        			 	t->left->left->ctype=curr_class;
+        			 	mflst=MLookup(curr_class,t->left->right->varname);
+        		      }else if(t->left->nodetype==fieldlst){
+        		      		if(t->left->left->nodetype!=self_field){
+        		      			printf("Method invocation apart for using self is not allowed\n");
+						exit(1);
+        		      		}
+        		      		struct Classtable* class_of_member=Flookup(curr_class,t->left->left->right->varname)->ctype;
+        		      		t->left->left->left->ctype=curr_class;
+        		      		if(class_of_member==NULL){
+        		      			printf("Invalid member accessed for class: %s\n",curr_class->name);
+        		      			exit(1);
+        		      		}
+        		      		if(MLookup(class_of_member,t->left->right->varname)==NULL){
+        			 		printf("Method: %s , does not exist for class: %s\n",t->left->right->varname,curr_class->name);
+        			 		exit(1);
+        			 	}
+        			 	mflst=MLookup(class_of_member,t->left->right->varname);
+        		      }else if(t->left->nodetype==field){
+        		      		if(lookup(t->left->left->varname)->cptr==NULL){
+        		      			printf("Method invocation from a non-class var\n");
+        		      			exit(1);
+        		      		}
+        		      		t->left->left->ctype=lookup(t->left->left->varname)->cptr;
+        		      		if(MLookup(lookup(t->left->left->varname)->cptr,t->left->right->varname)==NULL){
+        		      			printf("Method: %s , does not exist for class: %s\n",t->left->right->varname,lookup(t->left->left->varname)->cptr->name);
+        			 		exit(1);
+        		      		}
+        		      		mflst=MLookup(lookup(t->left->left->varname)->cptr,t->left->right->varname);
+        		      }else{
+
+					printf("Method invocation apart for using self is not allowed\n");
+					exit(1);
+			      }
+			      par1=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+        	     	      par2=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
+        	     	      par1=NULL;
+        	     	      par2=NULL;
+        	     
+        	     
+        	     	      convert_arglst(t->right,&par1,&par2,type);
+        	              printf("Entring fncall\n");
+        	     
+        	     
+        	     	      par2=mflst->paramlist;
+        	     
+        	     	if(par2==NULL){
+        	     		printf("par2 null\n");
+        	     	}
+        	     	while(par1!=NULL && par2!=NULL){
+        	     		if(strcmp(par1->type->name,par2->type->name)!=0){
+        	     			printf("%s %s\n",par1->type->name,par2->type->name);
+        	     			printf("Arg type mismatch in funcn call of %s\n",t->left->varname);
+        	     			exit(1);
+        	     		}
+        	     		par1=par1->next;
+        	     		par2=par2->next;
+        	     	}
+        	     	if((par1==NULL && par2!=NULL) || (par1!=NULL && par2==NULL)){
+        	     		printf("Incorrect number of args in funcn call of %s\n",t->left->varname);
+        	     		exit(1);
+        	     	}
+        	     	done=1;
+        	     	t->type=mflst->type;
+        		break;
 	 	
 	}
 	if(done==0){
@@ -952,6 +1652,7 @@ void before_code(){
 	fp1=fopen("code.xsm","w");
      	fprintf(fp1, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n",0,2056,0,0,0,0,0,0);
      	fprintf(fp1,"MOV SP,%d\n",curr_SP);
+     	
      	fprintf(fp1,"CALL F0\n");
      	
      	fprintf(fp1,"MOV R4 , \"Exit\"\n");
@@ -987,7 +1688,7 @@ void before_code(){
     	fprintf(fp1,"PUSH R4\n");
     	fprintf(fp1,"MOV R4 ,-2\n");
     	fprintf(fp1,"PUSH R4\n");
-    	fprintf(fp1,"MOV R4,R1\n");
+    	fprintf(fp1,"MOV R4,R19\n");
     	fprintf(fp1,"PUSH R4\n");
     	fprintf(fp1,"PUSH R4\n");
     	fprintf(fp1,"PUSH R4\n");
@@ -1042,6 +1743,7 @@ void before_code(){
     	fprintf(fp1,"POP R4\n");
     	fprintf(fp1,"POP R4\n");
      	fprintf(fp1,"RET\n");
+     	
 	
      	printf("done till here\n");
      	return;
@@ -1063,9 +1765,10 @@ int code_gen(struct tnode* t){
 	
 	int i,j;
 	int l1,l2;
-	int temp_use;
+	int temp_use,no_args;
 	int field_pos;
 	struct Lsymbol* lf=NULL;
+	struct Lsymbol* y=NULL;
 	struct Gsymbol* gf=NULL;
 	struct Paramstruct* pf=NULL;
 	switch ((t->nodetype)){
@@ -1127,7 +1830,7 @@ int code_gen(struct tnode* t){
                 	  return 30;
                           break;
                 case wr : i=code_gen(t->left);
-                	  fprintf(fp1,"MOV R1,R%d\n",i);
+                	  fprintf(fp1,"MOV R19,R%d\n",i);
                 	  free_reg();
                 	  for(int e=0;e<curr_reg;e++){
                 		fprintf(fp1,"PUSH R%d\n",e);
@@ -1173,15 +1876,58 @@ int code_gen(struct tnode* t){
                 	     return i;
                 	     break;    
                 case asg : printf("Inside asg\n");
-                	   i=code_gen(t->right);
-                	   
-                	   
-                	   if(t->left->nodetype==arrasg){
+                
+                	   if(t->right->nodetype==newnd){
+                	   	for(int e=0;e<curr_reg;e++){
+		        		fprintf(fp1,"PUSH R%d\n",e);
+		        	   }
+		        	   
+		        	   fprintf(fp1,"CALL 2144\n");
+		        	   i=get_reg();
+		        	   fprintf(fp1,"MOV R%d,R5\n",i);
+		        	   for(int e=curr_reg-2;e>=0;e--){
+		        		fprintf(fp1,"POP R%d\n",e);
+		        	   }
+		        	   if(t->left->nodetype==id){
+		        	   	fprintf(fp1,"MOV [%d],R%d\n",lookup(t->left->varname)->binding,i);
+		        	   	fprintf(fp1,"MOV [%d],%d\n",(lookup(t->left->varname)->binding)+1,(4096+(t->right->ctype->class_index)*8));
+		        	   }else if(t->left->nodetype==self_field){
+		        	   	y=LLookup("mem_field");
+		        	   	int bi=y->binding;
+		        	   	j=get_reg();
+                	  		fprintf(fp1,"MOV R%d,BP\n",j);
+                	  		fprintf(fp1,"ADD R%d,%d\n",j,bi);
+                	  		fprintf(fp1,"MOV R%d,[R%d]\n",j,j);
+                	  		fprintf(fp1,"ADD R%d,%d\n",j,Flookup(t->left->left->ctype,t->left->right->varname)->fieldindex);
+                	  		fprintf(fp1,"MOV [R%d],R%d\n",j,i);
+                	  		fprintf(fp1,"ADD R%d,1\n",j);
+                	  		fprintf(fp1,"MOV [R%d],%d\n",j,(4096+(t->right->ctype->class_index)*8));
+                	  		free_reg();
+                	  		
+		        	   	
+		        	   }
+		        	   
+		        	   
+		        	   
+                	   }else if(t->left->nodetype==arrasg){
+                	   	i=code_gen(t->right);
                 	   	j=code_gen(t->left);
                 	   	fprintf(fp1,"MOV [R%d],R%d\n",j,i);
                 	   	if(j!=30)
                 	   		free_reg();
+                	   }else if(t->left->nodetype==id && t->left->ctype!=NULL){
+                	   	i=30;
+                	   	
+                	   	fprintf(fp1,"MOV [%d],[%d]\n",lookup(t->left->varname)->binding,lookup(t->right->varname)->binding);
+                	   	
+                	   	fprintf(fp1,"MOV [%d],[%d]\n",(lookup(t->left->varname)->binding)+1,(lookup(t->right->varname)->binding)+1);
+                	   
+                	   
                 	   }else if(t->left->nodetype==id){
+                	   	
+                	   
+                	        fprintf(fp1,"BRKP\n");
+                	   	i=code_gen(t->right);
                 	        int b;
                 	        if(LLookup(t->left->varname)!=NULL){
                 	        	b=LLookup(t->left->varname)->binding;
@@ -1195,7 +1941,39 @@ int code_gen(struct tnode* t){
                 	        	fprintf(fp1,"MOV [%d],R%d\n",b,i);
                 	        }
                 	   	
+                	   }else if(t->left->nodetype==self_field){
+                	   	if(t->left->ctype!=NULL){
+                	   		y=LLookup("mem_field");
+		        	   	int ba=y->binding;
+		        	   	j=get_reg();
+                	  		fprintf(fp1,"MOV R%d,BP\n",j);
+                	  		fprintf(fp1,"ADD R%d,%d\n",j,ba);
+                	  		fprintf(fp1,"MOV R%d,[R%d]\n",j,j);
+                	  		
+                	  		fprintf(fp1,"ADD R%d,%d\n",j,Flookup(t->left->left->ctype,t->left->right->varname)->fieldindex);
+                	  		int k=get_reg();
+                	  		fprintf(fp1,"MOV R%d,BP\n",k);
+                	  		fprintf(fp1,"ADD R%d,%d\n",k,ba);
+                	  		fprintf(fp1,"MOV R%d,[R%d]\n",k,k);
+                	  		
+                	  		fprintf(fp1,"ADD R%d,%d\n",k,Flookup(t->right->left->ctype,t->right->right->varname)->fieldindex);
+                	  		fprintf(fp1,"MOV [R%d],[R%d]\n",j,k);
+                	  		fprintf(fp1,"ADD R%d,1\n",j);
+                	  		fprintf(fp1,"ADD R%d,1\n",k);
+                	  		fprintf(fp1,"MOV [R%d],[R%d]\n",j,k);
+                	  		free_reg();
+                	  		free_reg();
+                	  		i=30;
+                	  		
+                	   	}else{
+                	   		i=code_gen(t->right);
+                	   		j=code_gen(t->left);
+                	   		fprintf(fp1,"MOV [R%d],R%d\n",j,i);
+                	   		free_reg();
+                	   	}
                 	   }else if(t->left->nodetype==field || t->left->nodetype==fieldlst){
+                	   	i=code_gen(t->right);
+                	   	
                 	   	j=code_gen(t->left);
                 	   	fprintf(fp1,"MOV [R%d],R%d\n",j,i);
                 	   	free_reg();
@@ -1207,6 +1985,17 @@ int code_gen(struct tnode* t){
                 	   	free_reg();
                 	   return 30;
                            break;
+                case self_field: lf=LLookup("mem_field");
+                	         i=get_reg();
+                	         int bj=lf->binding;
+                	         fprintf(fp1,"BRKP\n");
+                	    	 fprintf(fp1,"MOV R%d,BP\n",i);
+                	  	 fprintf(fp1,"ADD R%d,%d\n",i,bj);
+                	  	 fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  	 fprintf(fp1,"ADD R%d,%d\n",i,Flookup(t->left->ctype,t->right->varname)->fieldindex);
+                	  	 return i;
+                
+                		break;
                 case field: i=code_gen(t->left);
                 	    field_pos=0;
                 	    struct Fieldlist* ff=t->left->type->fields;
@@ -1258,7 +2047,7 @@ int code_gen(struct tnode* t){
                 	  
                 	  int v;
                 	  
-                	  struct Lsymbol* y=LLookup(t->varname);
+                	  y=LLookup(t->varname);
                 	
                 	  
                 	  if(y!=NULL){
@@ -1330,12 +2119,18 @@ int code_gen(struct tnode* t){
                 	  		i=code_gen(t->right);
                 	  		j=get_reg();
                 	  		fprintf(fp1,"MOV R%d,-1\n",j);
+                	  		if(t->right->nodetype==self_field){
+                	  			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  		}
                 	  		fprintf(fp1,"NE R%d,R%d\n",i,j);
                 	  		free_reg();
                 	  	}else{
                 	  		i=code_gen(t->left);
                 	  		j=get_reg();
                 	  		fprintf(fp1,"MOV R%d,-1\n",j);
+                	  		if(t->left->nodetype==self_field){
+                	  			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  		}
                 	  		fprintf(fp1,"NE R%d,R%d\n",i,j);
                 	  		free_reg();
                 	  	}
@@ -1350,12 +2145,18 @@ int code_gen(struct tnode* t){
                 	  
                 	  return i;
                 	  break;
+                case brkpnd: fprintf(fp1,"BRKP\n");
+                	     return 30;
+                	     break;
                 case eq : 
                 	  if(t->left->nodetype==nullnd || t->right->nodetype==nullnd){
                 	  	if(t->left->nodetype==nullnd){
                 	  		i=code_gen(t->right);
                 	  		j=get_reg();
                 	  		fprintf(fp1,"MOV R%d,-1\n",j);
+                	  		if(t->right->nodetype==self_field){
+                	  			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  		}
                 	  		fprintf(fp1,"EQ R%d,R%d\n",i,j);
                 	  		free_reg();
                 	  	}else{
@@ -1363,6 +2164,9 @@ int code_gen(struct tnode* t){
                 	  		fprintf(fp1,"BRKP\n");
                 	  		j=get_reg();
                 	  		fprintf(fp1,"MOV R%d,-1\n",j);
+                	  		if(t->left->nodetype==self_field){
+                	  			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  		}
                 	  		fprintf(fp1,"EQ R%d,R%d\n",i,j);
                 	  		free_reg();
                 	  	}
@@ -1480,7 +2284,7 @@ int code_gen(struct tnode* t){
                 		fprintf(fp1,"PUSH R%d\n",e);
                 	    }
                 	    curr_reg=0;
-                	    int no_args=0;
+                	     no_args=0;
                 	    gf=lookup(t->left->varname);
                 	    pf=gf->paramlist;
                 	    while(pf!=NULL){
@@ -1526,8 +2330,195 @@ int code_gen(struct tnode* t){
 			    }
                 	    return 30;
                 	    break;
-                
+                case mdef:fprintf(fp1,"F%d:\n",MLookup(t->ctype,t->right->left->varname)->flabel);
+                	    fprintf(fp1,"PUSH BP\n");
+                	    fprintf(fp1,"MOV BP,SP\n");
+                	    
+                	    lf=lsymbtable;
+                	    fprintf(fp1,"MOV R19,-1\n");
+                	    while(lf!=NULL){
+                	    	if(lf->binding>0){
+                	    		fprintf(fp1,"PUSH R19\n");
+                	    	}
+                	    	lf=lf->next;
+                	    }
+                	    
+                	    printf("TILL HERE\n");
+			    i=code_gen(t->right->right->right->right);
+			    
+			    if(i!=30){
+			    	free_reg();
+			    }
+                	    return 30;
+                	   break;
+                case metcall: printf("FN CALL\n");
+                	    temp_use=curr_reg;
+                	    for(int e=0;e<curr_reg;e++){
+                		fprintf(fp1,"PUSH R%d\n",e);
+                	    }
+                	    curr_reg=0;
+                	     no_args=0;
+                	    struct Memberfunclist* tmf=NULL;
+                	    if(t->left->nodetype==self_field){
+                	    	pf=MLookup(t->left->left->ctype,t->left->right->varname)->paramlist;
+                	    	tmf=MLookup(t->left->left->ctype,t->left->right->varname);
+                	        lf=LLookup("met_field");
+                	        i=get_reg();
+                	        fprintf(fp1,"MOV R%d,BP\n",i);
+                	        fprintf(fp1,"ADD R%d,%d\n",i,lf->binding);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        
+                	        
+                	        lf=LLookup("mem_field");
+                	        
+                	        fprintf(fp1,"MOV R%d,BP\n",i);
+                	        fprintf(fp1,"ADD R%d,%d\n",i,lf->binding);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        free_reg();
+                	        
+                	        
+                	    }else if(t->left->nodetype==field){
+                	    	pf=MLookup(t->left->left->ctype,t->left->right->varname)->paramlist;
+                	        tmf=MLookup(t->left->left->ctype,t->left->right->varname);
+                	        
+                	        i=get_reg();
+                	        fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->left->left->varname)->binding)+1);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        fprintf(fp1,"MOV R%d,%d\n",i,lookup(t->left->left->varname)->binding);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        
+                	        free_reg();
+                	    }else if(t->left->nodetype==fieldlst){
+                	    	pf=MLookup(Flookup(t->left->left->left->ctype,t->left->left->right->varname)->ctype,t->left->right->varname)->paramlist;
+                	    	tmf=MLookup(Flookup(t->left->left->left->ctype,t->left->left->right->varname)->ctype,t->left->right->varname);
+                	    	lf=LLookup("mem_field");
+                	        i=get_reg();
+                	        fprintf(fp1,"MOV R%d,BP\n",i);
+                	        fprintf(fp1,"ADD R%d,%d\n",i,lf->binding);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        //fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"ADD R%d,%d\n",i,Flookup(t->left->left->left->ctype,t->left->left->right->varname)->fieldindex);
+                	        fprintf(fp1,"ADD R%d,1\n",i);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        
+                	        fprintf(fp1,"MOV R%d,BP\n",i);
+                	        fprintf(fp1,"ADD R%d,%d\n",i,lf->binding);
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        //fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"ADD R%d,%d\n",i,Flookup(t->left->left->left->ctype,t->left->left->right->varname)->fieldindex);
+                	        
+                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        
+                	       
+                	        
+                	        
+                	        
+                	        free_reg();
+                	        
+                	    }
+                	    
+                	    
+                	    while(pf!=NULL){
+                	    	no_args++;
+                	    	pf=pf->next;
+                	    }
+                	    
+                	    eval_and_push(t->right);
+                	    fprintf(fp1,"PUSH R0\n");
+                	    int bb;
+                	    struct Lsymbol* tl=NULL;
+                	    if(t->left->nodetype==self_field){
+                	    	tl=LLookup("met_field");
+                	        bb=tl->binding;
+		        	
+		        	i=get_reg();
+                	  	fprintf(fp1,"MOV R%d,BP\n",i);
+                	  	fprintf(fp1,"ADD R%d,%d\n",i,bb);
+                	  	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  	//fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	    	fprintf(fp1,"ADD R%d,%d\n",i,tmf->funcposition);
+                	    	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	    	free_reg();
+                	    }else if(t->left->nodetype==field){
+                	    	i=get_reg();
+                	    	fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->left->left->varname)->binding)+1);
+                	    	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	    	fprintf(fp1,"ADD R%d,%d\n",i,tmf->funcposition);
+                	    	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	    	free_reg();
+                	    
+                	    }else if(t->left->nodetype==fieldlst){
+                	    	tl=LLookup("mem_field");
+                	        bb=tl->binding;
+                	        i=get_reg();
+                	    	fprintf(fp1,"MOV R%d,BP\n",i);
+                	  	fprintf(fp1,"ADD R%d,%d\n",i,bb);
+                	  	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  	//fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  	fprintf(fp1,"ADD R%d,%d\n",i,(Flookup(t->left->left->left->ctype,t->left->left->right->varname)->fieldindex)+1);
+                	  	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	  	//fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	    	fprintf(fp1,"ADD R%d,%d\n",i,tmf->funcposition);
+                	    	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	    	free_reg();
+                	  	
+                	    }
+                	    
+                	    fprintf(fp1,"CALL R%d\n",i);
+                	    
+                	    curr_reg=temp_use;
+                	    i=get_reg();
+                	    fprintf(fp1,"MOV R%d,[SP]\n",i);
+                	    
+                	    fprintf(fp1,"POP R19\n");
+                	    for(int d=0;d<no_args;d++){
+                	    	fprintf(fp1,"POP R19\n");
+                	    }
+                	    fprintf(fp1,"POP R19\n");
+                	    fprintf(fp1,"POP R19\n");
+                	    for(int e=curr_reg-2;e>=0;e--){
+                		fprintf(fp1,"POP R%d\n",e);
+                	    }
+                	    return i;
+                		
+                	     break;
+                case delnd: 
+                	   fprintf(fp1,"MOV R1,[%d]\n",lookup(t->left->varname)->binding);
+                	     
+                	     for(int e=0;e<curr_reg;e++){
+                		fprintf(fp1,"PUSH R%d\n",e);
+                	     }
+                	     fprintf(fp1,"CALL 2172\n");
+                	     for(int e=curr_reg-1;e>=0;e--){
+                		fprintf(fp1,"POP R%d\n",e);
+                	     }
+                	   fprintf(fp1,"MOV [%d],-1\n",lookup(t->left->varname)->binding);
+                	   fprintf(fp1,"MOV [%d],-1\n",(lookup(t->left->varname)->binding)+1);
+                	    return 30;
+                	   
+                	   break;
                 case mainnd:fprintf(fp1,"F0:\n");
+                	    struct Classtable* ct=classtable;
+				while(ct!=NULL){
+					struct Memberfunclist* mf=ct->vfunptr;
+					int ii=0;
+					while(mf!=NULL){
+						fprintf(fp1,"MOV [%d],F%d\n",4096+((ct->class_index)*8)+ii,mf->flabel);
+						ii++;
+						mf=mf->next;
+					}
+					while(ii<8){
+						fprintf(fp1,"MOV [%d],-1\n",4096+((ct->class_index)*8)+ii);
+						ii++;
+					}
+					ct=ct->next;
+				}
                 	    fprintf(fp1,"MOV BP,SP\n");
               		    curr_main=1;
                 	    lf=lsymbtable;
