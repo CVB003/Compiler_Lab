@@ -1,0 +1,50 @@
+type
+endtype
+class
+A{
+decl
+int a;
+int f();
+enddecl
+int f(){
+	decl
+	enddecl
+	begin
+	write("in f");
+	return 1;
+	end
+}
+}
+B{
+decl
+int b;
+A a1;
+int g();
+enddecl
+int g(){
+	decl
+	
+	enddecl
+	begin
+	write("in g");
+	self.a1=new(A);
+	write(self.a1.f());
+	return 0;
+	end
+}
+}
+endclass
+decl
+enddecl
+int main(){
+	decl
+	B a1;
+	int g;
+	enddecl
+	begin
+	g=initialize();
+	a1=new(B);
+	write(a1.g());
+	return 1;
+	end
+}

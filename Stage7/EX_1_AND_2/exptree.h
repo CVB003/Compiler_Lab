@@ -16,6 +16,7 @@ struct Classtable* ctype;
 struct Paramstruct{
 	char* name;
 	struct Typetable* type;
+	struct Classtable* ctype;
 	struct Paramstruct* next;
 };
 
@@ -33,6 +34,7 @@ struct Gsymbol{
 struct Lsymbol{
 	char* name;
 	struct Typetable* type;
+	struct Classtable* ctype;
 	int binding;
 	struct Lsymbol* next;
 
@@ -130,7 +132,7 @@ void insert_paramlst(struct Gsymbol* t,struct tnode* temp);
 
 void convert_ldecl(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** curr_p);
 
-void assg_type_idlst(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** curr_p,struct Typetable* type);
+void assg_type_idlst(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** curr_p,char* type);
 
 int add_paramlst_Ltable(struct Paramstruct** p,struct Lsymbol** ls,struct Lsymbol** curr_ls);
 

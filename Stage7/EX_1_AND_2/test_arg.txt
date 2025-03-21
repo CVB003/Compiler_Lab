@@ -1,0 +1,66 @@
+type
+endtype
+class
+A{
+decl
+int a;
+int f();
+enddecl
+int f(){
+	decl
+	enddecl
+	begin
+	write("in f");
+	return 1;
+	end
+}
+}
+B{
+decl
+int b;
+int g(A a1);
+enddecl
+int g(A a1){
+	decl
+	
+	enddecl
+	begin
+	write("in g");
+	
+	write(a1.f());
+	return 0;
+	end
+}
+}
+endclass
+decl
+int simple(A a1);
+enddecl
+int simple(A a1){
+decl
+
+enddecl
+begin
+write("Entering sim");
+breakpoint;
+write(a1.f());
+return 2;
+end
+
+}
+int main(){
+	decl
+	B a1;
+	A a2;
+	int g;
+	enddecl
+	begin
+	g=initialize();
+	a1=new(B);
+	a2=new(A);
+	write("in here");
+	write(a1.g(a2));
+	return 1;
+	end
+}
+

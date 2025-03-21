@@ -857,8 +857,8 @@ void convert_lst_class(struct Paramstruct** pt,struct Paramstruct** curr,struct 
 		return;
 	}
 	if(t->nodetype==paramlst){
-		convert_lst(pt,curr,t->left);
-		convert_lst(pt,curr,t->right);
+		convert_lst_class(pt,curr,t->left);
+		convert_lst_class(pt,curr,t->right);
 		return;
 	}
 	struct Paramstruct* prm=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));

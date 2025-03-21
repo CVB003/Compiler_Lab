@@ -88,7 +88,7 @@ struct tnode* createTree(int val, char* type, char* c, int ntype, struct tnode *
        		   curr=NULL;
        		   convert_lst(&pt,&curr,temp->right->left);
        		   
-       		   
+       		   printf("This name eq\n");
        		   name_eq_args(t->paramlist,pt);
        		   
        		   struct Lsymbol* ls=(struct Lsymbol*)malloc(sizeof(struct Lsymbol)); 
@@ -272,7 +272,7 @@ void add_mdefs_class(struct tnode* t,struct Classtable* class){
         pt=NULL;
        	struct Paramstruct* curr=(struct Paramstruct*)malloc(sizeof(struct Paramstruct)); 
        	curr=NULL;
-       	convert_lst(&pt,&curr,t->right->right->left);
+       	convert_lst_class(&pt,&curr,t->right->right->left);
        	name_eq_args(memfunc->paramlist,pt);
 	
 	struct Lsymbol* ls=(struct Lsymbol*)malloc(sizeof(struct Lsymbol)); 
@@ -320,6 +320,16 @@ void add_mdefs_class(struct tnode* t,struct Classtable* class){
 	
 	lsymbtable=ls;
 	
+	struct Lsymbol* yy=ls;
+	while(yy!=NULL){
+		printf("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ\n");
+		printf("%s\n",yy->name);
+		if(yy->ctype!=NULL){
+			printf("%s\n",yy->ctype->name);
+		}
+		yy=yy->next;
+	}
+	
 	curr_class=class;
 	
 	check_decl(TLookup(t->left->varname),t->right->right->right->right);
@@ -344,6 +354,8 @@ void convert_methods_params(struct tnode* t,struct Paramstruct** p){
 	strcpy(p1->name,t->right->left->varname);
 	
 	p1->type=TLookup(t->left->varname);
+	p1->ctype=CLookup(t->left->varname);
+	
 	p1->next=NULL;
 	struct Paramstruct* temp=(*p);
 	
@@ -745,10 +757,18 @@ void add_lvars_Ltable(struct Paramstruct** p2,struct Lsymbol** ls,struct Lsymbol
 		l2->name=(char*)malloc(strlen((*p2)->name)*sizeof(char));
 		strcpy(l2->name,(*p2)->name);
 		
+		if((*p2)->type==NULL){
+			l2->ctype=(*p2)->ctype;
+			
+			l2->binding=curr_bind++;
+			curr_bind++;
+		}else{
+			l2->type=(*p2)->type;
+			l2->binding=curr_bind++;
+		}
 		
-		l2->type=(*p2)->type;
 		
-		l2->binding=curr_bind++;
+		
 		l2->next=NULL;
 		
 		if(*ls==NULL){
@@ -773,7 +793,8 @@ void convert_ldecl(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** 
 		return;
 	}
 	
-	assg_type_idlst(t->right,p2,curr_p,TLookup(t->left->varname));
+	
+	assg_type_idlst(t->right,p2,curr_p,t->left->varname);
 	return;
 	
 	
@@ -781,7 +802,7 @@ void convert_ldecl(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** 
 	
 }
 
-void assg_type_idlst(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** curr_p,struct Typetable* type){
+void assg_type_idlst(struct tnode* t,struct Paramstruct** p2,struct Paramstruct** curr_p,char* type){
 	if(t==NULL){
 		return;
 	}
@@ -793,7 +814,14 @@ void assg_type_idlst(struct tnode* t,struct Paramstruct** p2,struct Paramstruct*
 	struct Paramstruct* p=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
 	p->name=(char*)malloc(strlen(t->varname)*sizeof(char));
 	strcpy(p->name,t->varname);
-	p->type=type;
+	if(TLookup(type)==NULL){
+		p->ctype=CLookup(type);
+		printf("--------------------------------------------------------------------------------------\n");
+		printf("%s\n",CLookup(type)->name);
+	}else{
+		p->type=TLookup(type);
+	}
+	
 	p->next=NULL;
 	if(*p2==NULL){
 		*p2=p;
@@ -813,8 +841,18 @@ int add_paramlst_Ltable(struct Paramstruct** p,struct Lsymbol** ls,struct Lsymbo
 		l->name=(char*)malloc(strlen((*p)->name)*sizeof(char));
 		printf("IN PARAM %s\n",(*p)->name);
 		strcpy(l->name,(*p)->name);
-		l->type=(*p)->type;
-		l->binding=curr_bind--;
+		if((*p)->type==NULL){
+			l->ctype=(*p)->ctype;
+			curr_bind--;
+			l->binding=curr_bind--;
+			
+		}else{
+			l->type=(*p)->type;
+			
+			l->binding=curr_bind--;
+		}
+		
+		
 		l->next=NULL;
 		if(*ls==NULL){
 			*ls=l;
@@ -840,11 +878,12 @@ void convert_lst(struct Paramstruct** pt,struct Paramstruct** curr,struct tnode*
 	struct Paramstruct* prm=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
 	prm->name=(char*)malloc(strlen(t->right->varname)*sizeof(char));
 	strcpy(prm->name,t->right->varname);
-	prm->type=t->left->type;
+	prm->type=TLookup(t->left->varname);
+	prm->ctype=CLookup(t->left->varname);
 	prm->next=NULL;
-	if(*pt==NULL){
-		*pt=prm;
-		*curr=prm;
+	if((*pt)==NULL){
+		(*pt)=prm;
+		(*curr)=prm;
 	}else{
 		(*curr)->next=prm;
 		*curr=prm;
@@ -857,8 +896,8 @@ void convert_lst_class(struct Paramstruct** pt,struct Paramstruct** curr,struct 
 		return;
 	}
 	if(t->nodetype==paramlst){
-		convert_lst(pt,curr,t->left);
-		convert_lst(pt,curr,t->right);
+		convert_lst_class(pt,curr,t->left);
+		convert_lst_class(pt,curr,t->right);
 		return;
 	}
 	struct Paramstruct* prm=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
@@ -866,6 +905,7 @@ void convert_lst_class(struct Paramstruct** pt,struct Paramstruct** curr,struct 
 	strcpy(prm->name,t->right->varname);
 	//If needed change this if params can be smthg else other than int /str
 	prm->type=TLookup(t->left->varname);
+	prm->ctype=CLookup(t->left->varname);
 	prm->next=NULL;
 	if(*pt==NULL){
 		*pt=prm;
@@ -894,10 +934,17 @@ void name_eq_args(struct Paramstruct* p1,struct Paramstruct* p2){
 		printf("Args mismatch in declaration and definition\n");
 		exit(1);
 	}
-	if(strcmp(p1->name,p2->name)==0 && p1->type==p2->type){
+	if(strcmp(p1->name,p2->name)==0 && ((p1->type==p2->type) || (p1->ctype==p2->ctype))){
 		name_eq_args(p1->next,p2->next);
 	}else{
-		printf("Args mismatch in declaration and definition\n");
+		if(p1->ctype!=NULL){
+			printf("1 %s\n",p1->ctype->name);
+		}
+		if(p2->ctype!=NULL){
+			printf("2 %s\n",p2->ctype->name);
+		}
+		printf("%s %s\n",p1->name,p2->name);
+		printf("Args mismatch in declaration and definition11\n");
 		exit(1);
 	}
 	return;
@@ -1004,7 +1051,12 @@ void insert_paramlst(struct Gsymbol* t,struct tnode* temp){
 	struct Paramstruct* prm=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
 	prm->name=(char*)malloc(strlen(temp->right->varname)*sizeof(char));
 	strcpy(prm->name,temp->right->varname);
-	prm->type=temp->left->type;
+	
+		prm->ctype=CLookup(temp->left->varname);
+	
+		prm->type=TLookup(temp->left->varname);
+	
+	
 	if(p==NULL){
 		t->paramlist=prm;
 	}else{
@@ -1030,7 +1082,10 @@ void check_decl(struct Typetable* type,struct tnode* t){
 		return;
 	}
 	int done=0;
-	 
+	 printf("Call happening?\n");
+	 if(t->nodetype==fncall){
+	 	printf("YESS\n");
+	 }
 	struct Paramstruct* par1;
 	struct Paramstruct* par2;
 	switch((t->nodetype)){
@@ -1056,7 +1111,12 @@ void check_decl(struct Typetable* type,struct tnode* t){
 				printf("Arr %s is undeclared\n",t->left->left->varname);
 			 	exit(1);
 			}
+			printf("reaching til here\n");
+			if(t->left->nodetype==metcall){
+				printf("It is metcall\n");
+			}
 			check_decl(type,t->left);
+			printf("reaching and til here\n");
 			if(strcmp(t->left->type->name,"INT")!=0 && strcmp(t->left->type->name,"STR")!=0){
     		 	
     		 		printf("Type Mismatch!\n");
@@ -1077,12 +1137,16 @@ void check_decl(struct Typetable* type,struct tnode* t){
 			}
 			
 			if(t->right->nodetype==newnd){
+				printf("HEREE\n");
 				
-				if(t->left->ctype==NULL || t->right->ctype==NULL){
+				if((t->left->ctype==NULL || t->right->ctype==NULL) && (LLookup(t->left->varname)==NULL || LLookup(t->left->varname)->ctype==NULL)){
 					printf("Incorrect var types in new asg\n");
 					exit(1);
 				}
+				printf("HEREasdE\n");
+				
 				if(strcmp(t->left->ctype->name,t->right->ctype->name)!=0){
+					printf("Entering hererere\n");
 					struct Classtable* rhs_class=t->right->ctype->parentptr;
 					while(rhs_class!=NULL){
 						if(strcmp(t->left->ctype->name,rhs_class->name)==0){
@@ -1095,6 +1159,7 @@ void check_decl(struct Typetable* type,struct tnode* t){
 						exit(1);
 					}
 				}
+				printf("Exiting asg\n");
 				done=1;
 				break;
 			}
@@ -1248,6 +1313,9 @@ void check_decl(struct Typetable* type,struct tnode* t){
 	 			 if(LLookup(t->varname)!=NULL){
 	 			 	t->Lentry=LLookup(t->varname);
 	 			 	t->type=LLookup(t->varname)->type;
+	 			 	if(t->type==NULL){
+	 			 		t->ctype=LLookup(t->varname)->ctype;
+	 			 	}
 	 			 }else{
 	 			 	t->Gentry=lookup(t->varname);
 	 			 	t->type=lookup(t->varname)->type;
@@ -1435,12 +1503,7 @@ void check_decl(struct Typetable* type,struct tnode* t){
 	 		     }
 	 		     done=1;
 	 		     break;
-	 	case fncall: struct Lsymbol* tt=lsymbtable;
-	 		     printf("JUST BEFORE fncall table..................");
-	 		     while(tt!=NULL){
-	 		     	printf("%s %s\n",tt->name,tt->type->name);
-	 		     	tt=tt->next;
-	 		     }
+	 	case fncall: 
 	 		     par1=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
         	     	par2=(struct Paramstruct*)malloc(sizeof(struct Paramstruct));
         	     	par1=NULL;
@@ -1456,8 +1519,14 @@ void check_decl(struct Typetable* type,struct tnode* t){
         	     if(par2==NULL){
         	     	printf("par2 null\n");
         	     }
+        	     
+        	     printf("Entring fncall\n");
         	     while(par1!=NULL && par2!=NULL){
-        	     	if(strcmp(par1->type->name,par2->type->name)!=0){
+        	     	if(par1->ctype!=NULL && par2->ctype!=NULL && strcmp(par1->ctype->name,par2->ctype->name)!=0){
+        	     		printf("%s %s\n",par1->ctype->name,par2->ctype->name);
+        	     		printf("Arg type mismatch in funcn call of %s\n",t->left->varname);
+        	     		exit(1);
+        	     	}else if(par1->type!=NULL && par2->type!=NULL && strcmp(par1->type->name,par2->type->name)!=0){
         	     		printf("%s %s\n",par1->type->name,par2->type->name);
         	     		printf("Arg type mismatch in funcn call of %s\n",t->left->varname);
         	     		exit(1);
@@ -1479,7 +1548,7 @@ void check_decl(struct Typetable* type,struct tnode* t){
         		   t->left->ctype=CLookup(t->left->varname);
         		   t->ctype=t->left->ctype;
         		   done=1;
-        	
+        		  printf("Exiting newnd check\n");
         		   break;
         	
         	case delnd:check_decl(type,t->left);
@@ -1492,7 +1561,9 @@ void check_decl(struct Typetable* type,struct tnode* t){
         	
         		   break;
         		   
-        	case metcall: struct Memberfunclist* mflst=NULL; 
+        	case metcall: printf("entering metcall\n");
+        			struct Memberfunclist* mflst=NULL; 
+        			
         			if(t->left->nodetype==self_field){
         			 	if(MLookup(curr_class,t->left->right->varname)==NULL){
         			 		printf("Method: %s , does not exist for class: %s\n",t->left->right->varname,curr_class->name);
@@ -1517,16 +1588,33 @@ void check_decl(struct Typetable* type,struct tnode* t){
         			 	}
         			 	mflst=MLookup(class_of_member,t->left->right->varname);
         		      }else if(t->left->nodetype==field){
-        		      		if(lookup(t->left->left->varname)->cptr==NULL){
+        		      		printf("entering metcall\n");
+        		      		if(LLookup(t->left->left->varname)==NULL && LLookup(t->left->left->varname)->ctype==NULL && lookup(t->left->left->varname)->cptr==NULL){
         		      			printf("Method invocation from a non-class var\n");
         		      			exit(1);
         		      		}
-        		      		t->left->left->ctype=lookup(t->left->left->varname)->cptr;
-        		      		if(MLookup(lookup(t->left->left->varname)->cptr,t->left->right->varname)==NULL){
-        		      			printf("Method: %s , does not exist for class: %s\n",t->left->right->varname,lookup(t->left->left->varname)->cptr->name);
+        		      		printf("entering metcall 3\n");
+        		      		if(LLookup(t->left->left->varname)==NULL && LLookup(t->left->left->varname)->ctype==NULL){
+        		      			t->left->left->ctype=lookup(t->left->left->varname)->cptr;
+        		      		}else{
+        		      			printf("%s\n",t->left->left->varname);
+        		      			struct Lsymbol* ggg=lsymbtable;
+        		      			while(ggg!=NULL){
+        		      				printf("%s\n",ggg->name);
+        		      				ggg=ggg->next;
+        		      			}
+        		      			if(LLookup(t->left->left->varname)->ctype==NULL){
+        		      				printf("asdssa\n");
+        		      			}
+        		      			t->left->left->ctype=LLookup(t->left->left->varname)->ctype;
+        		      		}
+        		      		printf("%s\n",t->left->left->ctype->name);
+        		      		if(MLookup(t->left->left->ctype,t->left->right->varname)==NULL){
+        		      			printf("Method: %s , does not exist for class: %s\n",t->left->right->varname,t->left->left->ctype->name);
         			 		exit(1);
         		      		}
-        		      		mflst=MLookup(lookup(t->left->left->varname)->cptr,t->left->right->varname);
+        		      		printf("Till here metcall\n");
+        		      		mflst=MLookup(t->left->left->ctype,t->left->right->varname);
         		      }else{
 
 					printf("Method invocation apart for using self is not allowed\n");
@@ -1537,9 +1625,9 @@ void check_decl(struct Typetable* type,struct tnode* t){
         	     	      par1=NULL;
         	     	      par2=NULL;
         	     
-        	     
+        	     	      
         	     	      convert_arglst(t->right,&par1,&par2,type);
-        	              printf("Entring fncall\n");
+        	              printf("Entring metcall\n");
         	     
         	     
         	     	      par2=mflst->paramlist;
@@ -1548,11 +1636,15 @@ void check_decl(struct Typetable* type,struct tnode* t){
         	     		printf("par2 null\n");
         	     	}
         	     	while(par1!=NULL && par2!=NULL){
-        	     		if(strcmp(par1->type->name,par2->type->name)!=0){
-        	     			printf("%s %s\n",par1->type->name,par2->type->name);
-        	     			printf("Arg type mismatch in funcn call of %s\n",t->left->varname);
-        	     			exit(1);
-        	     		}
+        	     		if(par1->ctype!=NULL && par2->ctype!=NULL && strcmp(par1->ctype->name,par2->ctype->name)!=0){
+        	     		printf("%s %s\n",par1->ctype->name,par2->ctype->name);
+        	     		printf("Arg type mismatch in funcn call of %s\n",t->left->varname);
+        	     		exit(1);
+        	     	}else if(par1->type!=NULL && par2->type!=NULL && strcmp(par1->type->name,par2->type->name)!=0){
+        	     		printf("%s %s\n",par1->type->name,par2->type->name);
+        	     		printf("Arg type mismatch in funcn call of %s\n",t->left->varname);
+        	     		exit(1);
+        	     	}
         	     		par1=par1->next;
         	     		par2=par2->next;
         	     	}
@@ -1889,8 +1981,19 @@ int code_gen(struct tnode* t){
 		        		fprintf(fp1,"POP R%d\n",e);
 		        	   }
 		        	   if(t->left->nodetype==id){
-		        	   	fprintf(fp1,"MOV [%d],R%d\n",lookup(t->left->varname)->binding,i);
-		        	   	fprintf(fp1,"MOV [%d],%d\n",(lookup(t->left->varname)->binding)+1,(4096+(t->right->ctype->class_index)*8));
+		        	   	if(LLookup(t->left->varname)!=NULL){
+		        	   		j=get_reg();
+		        	   		fprintf(fp1,"MOV R%d,BP\n",j);
+		        	   		fprintf(fp1,"ADD R%d,%d\n",j,LLookup(t->left->varname)->binding);
+		        	   		fprintf(fp1,"MOV [R%d],R%d\n",j,i);
+		        	   		fprintf(fp1,"ADD R%d,1\n",j);
+		        	   		fprintf(fp1,"MOV [R%d],%d\n",j,(4096+(t->right->ctype->class_index)*8));
+		        	   		free_reg();
+		        	   	}else{
+		        	   		fprintf(fp1,"MOV [%d],R%d\n",lookup(t->left->varname)->binding,i);
+		        	   		fprintf(fp1,"MOV [%d],%d\n",(lookup(t->left->varname)->binding)+1,(4096+(t->right->ctype->class_index)*8));
+		        	   	}
+		        	   	
 		        	   }else if(t->left->nodetype==self_field){
 		        	   	y=LLookup("mem_field");
 		        	   	int bi=y->binding;
@@ -1917,10 +2020,28 @@ int code_gen(struct tnode* t){
                 	   		free_reg();
                 	   }else if(t->left->nodetype==id && t->left->ctype!=NULL){
                 	   	i=30;
-                	   	
-                	   	fprintf(fp1,"MOV [%d],[%d]\n",lookup(t->left->varname)->binding,lookup(t->right->varname)->binding);
-                	   	
-                	   	fprintf(fp1,"MOV [%d],[%d]\n",(lookup(t->left->varname)->binding)+1,(lookup(t->right->varname)->binding)+1);
+                	   	int lb=0;
+                	   	int rb=0;
+                	   	lb=get_reg();
+                	   	rb=get_reg();
+                	   	if(LLookup(t->left->varname)!=NULL){
+                	   		fprintf(fp1,"MOV R%d,BP\n",lb);
+                	   		fprintf(fp1,"ADD R%d,%d\n",lb,LLookup(t->left->varname)->binding);
+                	   	}else{
+                	   		fprintf(fp1,"MOV R%d,%d\n",lb,lookup(t->left->varname)->binding);
+                	   	}
+                	   	if(LLookup(t->right->varname)!=NULL){
+                	   		fprintf(fp1,"MOV R%d,BP\n",rb);
+                	   		fprintf(fp1,"ADD R%d,%d\n",rb,LLookup(t->right->varname)->binding);
+                	   	}else{
+                	   		fprintf(fp1,"MOV R%d,%d\n",rb,lookup(t->right->varname)->binding);
+                	   	}
+                	   	fprintf(fp1,"MOV [R%d],[R%d]\n",lb,rb);
+                	   	fprintf(fp1,"ADD R%d,1\n",lb);
+                	   	fprintf(fp1,"ADD R%d,1\n",rb);
+                	   	fprintf(fp1,"MOV [R%d],[R%d]\n",lb,rb);
+                	   	free_reg();
+                	   	free_reg();
                 	   
                 	   
                 	   }else if(t->left->nodetype==id){
@@ -2289,6 +2410,9 @@ int code_gen(struct tnode* t){
                 	    pf=gf->paramlist;
                 	    while(pf!=NULL){
                 	    	no_args++;
+                	    	if(pf->ctype!=NULL){
+                	    		no_args++;
+                	    	}
                 	    	pf=pf->next;
                 	    }
                 	    eval_and_push(t->right);
@@ -2319,6 +2443,9 @@ int code_gen(struct tnode* t){
                 	    	if(lf->binding>0){
                 	    		fprintf(fp1,"PUSH R19\n");
                 	    	}
+                	    	if(lf->binding>0 && lf->ctype!=NULL){
+                	    		fprintf(fp1,"PUSH R19\n");
+                	    	}
                 	    	lf=lf->next;
                 	    }
                 	    
@@ -2338,6 +2465,9 @@ int code_gen(struct tnode* t){
                 	    fprintf(fp1,"MOV R19,-1\n");
                 	    while(lf!=NULL){
                 	    	if(lf->binding>0){
+                	    		fprintf(fp1,"PUSH R19\n");
+                	    	}
+                	    	if(lf->binding>0 && lf->ctype!=NULL){
                 	    		fprintf(fp1,"PUSH R19\n");
                 	    	}
                 	    	lf=lf->next;
@@ -2384,12 +2514,27 @@ int code_gen(struct tnode* t){
                 	        tmf=MLookup(t->left->left->ctype,t->left->right->varname);
                 	        
                 	        i=get_reg();
-                	        fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->left->left->varname)->binding)+1);
-                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
-                	        fprintf(fp1,"PUSH R%d\n",i);
-                	        fprintf(fp1,"MOV R%d,%d\n",i,lookup(t->left->left->varname)->binding);
-                	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
-                	        fprintf(fp1,"PUSH R%d\n",i);
+                	        if(LLookup(t->left->left->varname)!=NULL){
+                	        	
+                	        	fprintf(fp1,"MOV R%d,BP\n",i);
+                	        	fprintf(fp1,"ADD R%d,%d\n",i,(LLookup(t->left->left->varname)->binding)+1);
+                	        	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        	fprintf(fp1,"PUSH R%d\n",i);
+                	        	
+                	        	fprintf(fp1,"MOV R%d,BP\n",i);
+                	        	fprintf(fp1,"ADD R%d,%d\n",i,(LLookup(t->left->left->varname)->binding));
+                	        	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+                	        	fprintf(fp1,"PUSH R%d\n",i);
+                	        	
+                	        }else{
+                	        	  fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->left->left->varname)->binding)+1);
+		        	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+		        	        fprintf(fp1,"PUSH R%d\n",i);
+		        	        fprintf(fp1,"MOV R%d,%d\n",i,lookup(t->left->left->varname)->binding);
+		        	        fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+		        	        fprintf(fp1,"PUSH R%d\n",i);
+                	        }
+                	      
                 	        
                 	        free_reg();
                 	    }else if(t->left->nodetype==fieldlst){
@@ -2426,6 +2571,9 @@ int code_gen(struct tnode* t){
                 	    
                 	    while(pf!=NULL){
                 	    	no_args++;
+                	    	if(pf->ctype!=NULL){
+                	    		no_args++;
+                	    	}
                 	    	pf=pf->next;
                 	    }
                 	    
@@ -2447,7 +2595,13 @@ int code_gen(struct tnode* t){
                 	    	free_reg();
                 	    }else if(t->left->nodetype==field){
                 	    	i=get_reg();
-                	    	fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->left->left->varname)->binding)+1);
+                	    	if(LLookup(t->left->left->varname)!=NULL){
+                	    		fprintf(fp1,"MOV R%d,BP\n",i);
+                	    		fprintf(fp1,"ADD R%d,%d\n",i,(LLookup(t->left->left->varname)->binding)+1);
+                	    	}else{
+                	    		fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->left->left->varname)->binding)+1);
+                	    	}
+                	    	
                 	    	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
                 	    	fprintf(fp1,"ADD R%d,%d\n",i,tmf->funcposition);
                 	    	fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
@@ -2527,6 +2681,9 @@ int code_gen(struct tnode* t){
                 	    	if(lf->binding>0){
                 	    		fprintf(fp1,"PUSH R19\n");
                 	    	}
+                	    	if(lf->binding>0 && lf->ctype!=NULL){
+                	    		fprintf(fp1,"PUSH R19\n");
+                	    	}
                 	    	lf=lf->next;
                 	    }
 			    i=code_gen(t->right);
@@ -2543,6 +2700,9 @@ int code_gen(struct tnode* t){
                 	    printf("IS REACH?\n");
                 	    while(lf!=NULL){
                 	    	if((lf->binding)>0){
+                	    		fprintf(fp1,"POP R%d\n",i);
+                	    	}
+                	    	if(lf->binding>0 && lf->ctype!=NULL){
                 	    		fprintf(fp1,"POP R%d\n",i);
                 	    	}
                 	    	lf=lf->next;
@@ -2581,11 +2741,68 @@ void eval_and_push(struct tnode* t){
 		return;
 	}
 	if(t->nodetype!=arglst){
-		int i=code_gen(t);
-		fprintf(fp1,"PUSH R%d\n",i);
-		if(i!=30){
-			free_reg();
+		if(t->nodetype==id && t->ctype!=NULL){
+			if(LLookup(t->varname)!=NULL){
+				int i=get_reg();
+				
+				
+				fprintf(fp1,"MOV R%d,BP\n",i);
+				fprintf(fp1,"ADD R%d,%d\n",i,(LLookup(t->varname)->binding));
+				fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+				fprintf(fp1,"PUSH R%d\n",i);
+				
+				fprintf(fp1,"MOV R%d,BP\n",i);
+				fprintf(fp1,"ADD R%d,%d\n",i,(LLookup(t->varname)->binding)+1);
+				fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+				fprintf(fp1,"PUSH R%d\n",i);
+				
+				if(i!=30){
+					free_reg();
+				}
+				
+			}else{
+				int i=get_reg();
+				
+				
+				fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->varname)->binding));
+				fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+				fprintf(fp1,"PUSH R%d\n",i);
+				fprintf(fp1,"MOV R%d,%d\n",i,(lookup(t->varname)->binding)+1);
+				fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+				fprintf(fp1,"PUSH R%d\n",i);
+				if(i!=30){
+					free_reg();
+				}
+			}
+		}else if(t->nodetype==self_field && t->ctype!=NULL){
+			int i=get_reg();
+			
+			
+			fprintf(fp1,"MOV R%d,BP\n",i);
+			fprintf(fp1,"ADD R%d,%d\n",i,(LLookup("mem_field")->binding));
+			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+			fprintf(fp1,"ADD R%d,%d\n",i,(Flookup(t->left->ctype,t->right->varname)->fieldindex));
+			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+			fprintf(fp1,"PUSH R%d\n",i);
+			
+			fprintf(fp1,"MOV R%d,BP\n",i);
+			fprintf(fp1,"ADD R%d,%d\n",i,(LLookup("mem_field")->binding));
+			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+			fprintf(fp1,"ADD R%d,%d\n",i,(Flookup(t->left->ctype,t->right->varname)->fieldindex)+1);
+			fprintf(fp1,"MOV R%d,[R%d]\n",i,i);
+			fprintf(fp1,"PUSH R%d\n",i);
+			if(i!=30){
+				free_reg();
+			}
+			
+		}else{
+			int i=code_gen(t);
+			fprintf(fp1,"PUSH R%d\n",i);
+			if(i!=30){
+				free_reg();
+			}
 		}
+		
 	}else{
 		int i=code_gen(t->right);
 		fprintf(fp1,"PUSH R%d\n",i);
