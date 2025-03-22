@@ -4,5 +4,12 @@ kind of stmts.
 
 //Modify delete to have have DELETE ( Field ) also later
 
-//Modify alloc check and code for self.field=alloc and for null
+//Change impl so that code gen of mdefs happen first and not in the end, curr problem: 2056,SP value
+
+//Modify free also to ensure loc of var, -1 is stored
+
+//Check why: 
+Important Note : Unless fun() is defined in class A, the call x.fun() should result in a compilation error even if B and C contains the declaration for fun(). This is because if a variable of a parent class holds the reference to an object of a descendent class, only methods defined in the parent class are allowed to be invoked using the variable of the parent class.
+
+//Check for method decl but no def
 
