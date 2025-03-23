@@ -13,3 +13,5 @@ Important Note : Unless fun() is defined in class A, the call x.fun() should res
 
 //Check for method decl but no def
 
+//Check if double decl(re-writing of flabel)
+

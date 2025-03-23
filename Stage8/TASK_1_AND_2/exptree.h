@@ -81,7 +81,7 @@ struct Fieldlist* convert_fldlst_class(struct tnode* t,char* name,struct Fieldli
 
 void convert_flds_class(struct Fieldlist** f,struct tnode* t,char* name);
 
-struct Memberfunclist* MLookup (struct Classtable* classn,char* name,struct tnode* t);
+struct Memberfunclist* MLookup (struct Classtable* classn,char* name);
 
 struct Fieldlist* Flookup(struct Classtable* classn,char* name);
 
@@ -96,14 +96,6 @@ void add_funcdecl_class(struct tnode* t,struct Classtable* classn);
 void add_mdefs_class(struct tnode* t,struct Classtable* classn);
 
 int code_gen(struct tnode* t);
-
-void convert_plst(struct Paramstruct** pt,struct Paramstruct** currpt,struct tnode* t);
-
-void convert_alst(struct Paramstruct** pt,struct Paramstruct** currpt,struct tnode* t);
-
-int check_plst(struct Paramstruct* p1,struct Paramstruct* p2);
-
-int check_alst(struct Paramstruct* p1,struct Paramstruct* p2);
 /*Create a node tnode*/
 struct tnode* createTree(int val, char* type, char* c, int ntype, struct tnode *l, struct tnode *r);
 	
