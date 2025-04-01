@@ -23,7 +23,7 @@ enddecl
 		decl
 		enddecl
 		begin
-			write("hello in init");
+			
 			self.root=null;
 			breakpoint;
 			return 1;
@@ -49,7 +49,7 @@ enddecl
 			bst temp;
 		enddecl
 		begin
-			write("in getnode");
+			
 			temp=alloc();
 			temp.a=key;
 			temp.left=null;
@@ -62,13 +62,13 @@ enddecl
 		decl
 		enddecl
 		begin
-			write("inside insert");
+			
 			if (h == null) then
-				write(key);
+				
 				h = self.getnode(key);
-				write("in if2");
+				
 			else 
-				write("in else");
+				
 				if (key < h.a) then
 					h.left  = self.insert(h.left, key);
 				else 
@@ -136,26 +136,26 @@ int main(){
 	enddecl
 	begin
 		
-		write("hello");
+		
 		
 		x=initialize();
-		write("hello2");
+		
 		
 		obj = new(bstclass);
-		write("hello3");
+		
 		x=obj.init();
-		write("hello4");
+		
 		read(val);
 		Root = obj.getroot();
-		write("Hello");
+		
 		while(val!=0) do
-		  write("inside while");
+		  
 		  Root = obj.insert(Root,val);
-		  write("insert done");
+		  
 		  
 		  read(val);
 		endwhile;
-		write("out while");
+		
 		x = obj.setroot(Root);
 		in = obj.inOrderfun(obj.getroot());
 		in = obj.preOrderfun(obj.getroot());

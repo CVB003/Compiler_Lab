@@ -7,6 +7,8 @@ int curr_SP=4096;
 int curr_flabel=1;
 int curr_main=0;
 int curr_findex=0;
+int temp_use[1000];
+int curr_temp_use=0;
 int curr_classindex=0;
 int curr_fpos=0;
 struct Gsymbol* symbtable=NULL;
@@ -1857,7 +1859,7 @@ int code_gen(struct tnode* t){
 	
 	int i,j;
 	int l1,l2;
-	int temp_use,no_args;
+	int no_args;
 	int field_pos;
 	struct Lsymbol* lf=NULL;
 	struct Lsymbol* y=NULL;
@@ -2373,7 +2375,7 @@ int code_gen(struct tnode* t){
                 	     return i;
                 	     break;
                 case fncall:printf("FN CALL\n");
-                	    temp_use=curr_reg;
+                	    temp_use[curr_temp_use++]=curr_reg;
                 	    for(int e=0;e<curr_reg;e++){
                 		fprintf(fp1,"PUSH R%d\n",e);
                 	    }
@@ -2389,7 +2391,7 @@ int code_gen(struct tnode* t){
                 	    fprintf(fp1,"PUSH R0\n");
                 	    fprintf(fp1,"CALL F%d\n",gf->flabel);
                 	    
-                	    curr_reg=temp_use;
+                	    curr_reg=temp_use[curr_temp_use--];
                 	    i=get_reg();
                 	    fprintf(fp1,"MOV R%d,[SP]\n",i);
                 	    
@@ -2446,7 +2448,7 @@ int code_gen(struct tnode* t){
                 	    return 30;
                 	   break;
                 case metcall: printf("FN CALL\n");
-                	    temp_use=curr_reg;
+                	    temp_use[curr_temp_use++]=curr_reg;
                 	    for(int e=0;e<curr_reg;e++){
                 		fprintf(fp1,"PUSH R%d\n",e);
                 	    }
@@ -2566,7 +2568,7 @@ int code_gen(struct tnode* t){
                 	    
                 	    fprintf(fp1,"CALL R%d\n",i);
                 	    
-                	    curr_reg=temp_use;
+                	    curr_reg=temp_use[curr_temp_use--];
                 	    i=get_reg();
                 	    fprintf(fp1,"MOV R%d,[SP]\n",i);
                 	    
