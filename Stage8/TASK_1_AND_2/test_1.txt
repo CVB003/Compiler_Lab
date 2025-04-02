@@ -49,7 +49,7 @@ endclass
 
 decl
   int n;
-  A obj;
+  A obj1,obj2;
 enddecl
 
 int main() {
@@ -57,14 +57,10 @@ int main() {
   enddecl
   begin
       n=initialize();
-      read(n);
-      if(n>0) then 
-        obj = new(A);
-      else
-        obj = new(B);
-        breakpoint;
-       endif;
-        n = obj.f0();     
+      
+      obj1=new(A);
+      obj2=new(A);
+      breakpoint;   
         return 1;
   end
 }

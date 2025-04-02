@@ -87,6 +87,7 @@ endclass
 decl
     A obj ;
     A testobj;
+    B objB;
 enddecl
 
 int main() {
@@ -96,19 +97,13 @@ int main() {
   begin
     temp= initialize();
     read(n);
-    if(n < 0)then
-        obj = new(A);
-    else
-        if(n == 0)then
-            obj = new(B);
-        else
-            if(n > 0)then
-                obj = new(C);
-            endif;
-       endif;
-    endif;
-   testobj = obj;
-   write(testobj.f0());              
+    objB=new(B);
+    obj = new(A);
+   
+    
+    objB=obj;
+    
+                 
    return 1;
   end
 }

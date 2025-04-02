@@ -2391,7 +2391,8 @@ int code_gen(struct tnode* t){
                 	    fprintf(fp1,"PUSH R0\n");
                 	    fprintf(fp1,"CALL F%d\n",gf->flabel);
                 	    
-                	    curr_reg=temp_use[curr_temp_use--];
+                	    curr_temp_use--;
+                	    curr_reg=temp_use[curr_temp_use];
                 	    i=get_reg();
                 	    fprintf(fp1,"MOV R%d,[SP]\n",i);
                 	    
