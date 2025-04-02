@@ -2568,8 +2568,8 @@ int code_gen(struct tnode* t){
                 	    }
                 	    
                 	    fprintf(fp1,"CALL R%d\n",i);
-                	    
-                	    curr_reg=temp_use[curr_temp_use--];
+                	    curr_temp_use--;
+                	    curr_reg=temp_use[curr_temp_use];
                 	    i=get_reg();
                 	    fprintf(fp1,"MOV R%d,[SP]\n",i);
                 	    
